@@ -1,0 +1,46 @@
+name: list_am_bot
+services:
+  list_am_bot.postgres:
+    container_name: list_am_bot.postgres
+    env_file: .env
+    profiles: [system]
+    environment:
+      - POSTGRES_DB=${POSTGRES_NAME}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    command: ['postgres', '-c', 'log_statement=all']
+    image: postgres:16-alpine
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USERNAME} -d ${POSTGRES_NAME}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: always
+    volumes:
+      - ./.docker/postgres:/var/lib/postgresql/data
+    ports:
+      - ${POSTGRES_PORT}:5432
+
+  list_am_bot.core:
+    image: list_am_bot-dev:latest
+    entrypoint: /tmp/entrypoint.sh
+    profiles: [node]
+    container_name: list_am_bot.core
+    env_file:
+      - ./.env
+    restart: always
+    volumes:
+      - './logs:/usr/src/app/logs'
+      - './.env:/usr/src/app/.env'
+      - './package.json:/usr/src/app/package.json'
+      - './package-lock.json:/usr/src/app/package-lock.json'
+      - './src:/usr/src/app/src'
+    stdin_open: true
+    tty: true
