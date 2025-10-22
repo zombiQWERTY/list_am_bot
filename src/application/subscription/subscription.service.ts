@@ -5,10 +5,6 @@ import {
   InvalidQueryException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import {
-  SeenListingRepositoryPort,
-  ISeenListingRepository,
-} from '@list-am-bot/domain/seen-listing/ports/seen-listing.repository.port';
-import {
   SubscriptionRepositoryPort,
   ISubscriptionRepository,
 } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
@@ -22,8 +18,6 @@ export class SubscriptionService {
   constructor(
     @Inject(SubscriptionRepositoryPort)
     private readonly subscriptionRepository: ISubscriptionRepository,
-    @Inject(SeenListingRepositoryPort)
-    private readonly seenListingRepository: ISeenListingRepository,
   ) {}
 
   async create(userId: number, query: string): Promise<SubscriptionEntity> {
@@ -51,19 +45,11 @@ export class SubscriptionService {
   }
 
   async delete(subscriptionId: number): Promise<void> {
-    await this.seenListingRepository.deleteBySubscriptionId(subscriptionId);
-    await this.subscriptionRepository.delete(subscriptionId);
+    await this.subscriptionRepository.deleteWithSeenListings(subscriptionId);
   }
 
   async deleteAll(userId: number): Promise<void> {
-    const subscriptions =
-      await this.subscriptionRepository.findByUserId(userId);
-
-    for (const subscription of subscriptions) {
-      await this.seenListingRepository.deleteBySubscriptionId(subscription.id);
-    }
-
-    await this.subscriptionRepository.deleteAllByUserId(userId);
+    await this.subscriptionRepository.deleteAllWithSeenListings(userId);
   }
 
   async count(userId: number): Promise<number> {

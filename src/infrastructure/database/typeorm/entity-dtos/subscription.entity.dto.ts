@@ -10,9 +10,8 @@ import {
 } from 'typeorm';
 
 import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
-
-import { SeenListingEntityDto } from './seen-listing.entity.dto';
-import { UserEntityDto } from './user.entity.dto';
+import { SeenListingEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/seen-listing.entity.dto';
+import { UserEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/user.entity.dto';
 
 @Entity('subscription')
 @Index(['userId'])

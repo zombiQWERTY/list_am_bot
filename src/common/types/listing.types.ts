@@ -15,6 +15,7 @@ export interface ScrapeResult {
   query: string;
   listings: Listing[];
   fetchedAt: Date;
+  error?: string;
 }
 
 export interface NotificationPayload {

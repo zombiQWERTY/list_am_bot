@@ -8,8 +8,7 @@ import {
 } from 'typeorm';
 
 import { DeliveryEntity } from '@list-am-bot/domain/delivery/delivery.entity';
-
-import { UserEntityDto } from './user.entity.dto';
+import { UserEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/user.entity.dto';
 
 @Entity('delivery')
 @Index(['userId'])

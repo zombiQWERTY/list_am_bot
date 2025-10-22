@@ -9,8 +9,7 @@ import {
 } from 'typeorm';
 
 import { SeenListingEntity } from '@list-am-bot/domain/seen-listing/seen-listing.entity';
-
-import { SubscriptionEntityDto } from './subscription.entity.dto';
+import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 
 @Entity('seen_listing')
 @Unique(['subscriptionId', 'listingId'])

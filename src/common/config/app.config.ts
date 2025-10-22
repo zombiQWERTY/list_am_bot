@@ -1,17 +1,26 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 
 const configSchema = z.object({
-  botToken: z.string().min(1),
+  botToken: z.string().min(1, 'BOT_TOKEN is required'),
   cronSchedule: z.string().default('0 * * * *'),
-  fetchTimeoutMs: z.number().default(15000),
-  requestDelayMs: z.number().default(2500),
-  maxRetries: z.number().default(3),
+  fetchTimeoutMs: z.number().positive().default(15000),
+  requestDelayMs: z.number().positive().default(2500),
+  maxRetries: z.number().positive().int().default(3),
   listAmBaseUrl: z.string().url().default('https://www.list.am'),
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
 });
 
 export type AppConfig = z.infer<typeof configSchema>;
+
+function formatValidationError(error: ZodError): string {
+  const errors = error.errors.map((err): string => {
+    const path = err.path.join('.');
+    return `  - ${path}: ${err.message}`;
+  });
+
+  return `Configuration validation failed:\n${errors.join('\n')}\n\nPlease check your environment variables.`;
+}
 
 export const validateAndLoadConfig = (): AppConfig => {
   const rawConfig = {
@@ -31,7 +40,17 @@ export const validateAndLoadConfig = (): AppConfig => {
     nodeEnv: process.env.NODE_ENV,
   };
 
-  return configSchema.parse(rawConfig);
+  try {
+    return configSchema.parse(rawConfig);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const formattedError = formatValidationError(error);
+      // eslint-disable-next-line no-console
+      console.error(`\n❌ ${formattedError}\n`);
+      process.exit(1);
+    }
+    throw error;
+  }
 };
 
 export const appConfigFactory = (): AppConfig => validateAndLoadConfig();

@@ -1,4 +1,7 @@
-import { ConcurrencyLimits, SessionType } from './proxy.types';
+import {
+  ConcurrencyLimits,
+  SessionType,
+} from '@list-am-bot/infrastructure/scraper/proxy/proxy.types';
 
 /**
  * Proxy rotation configuration

@@ -1,12 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Update, Start, Help, Command, On, Ctx, Action } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
-import { InlineKeyboardMarkup } from 'telegraf/types';
 
 import { ScrapeWorkerService } from '@list-am-bot/application/scheduler/scrape-worker.service';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
-import { Listing } from '@list-am-bot/common/types/listing.types';
+import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
+import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
+import { Listing, ScrapeResult } from '@list-am-bot/common/types/listing.types';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 
@@ -102,7 +103,10 @@ export class BotUpdate {
 
       // Perform search through queue
       this.logger.debug(`Starting search for: "${query}"`);
-      const result = await this.scrapeWorker.scrapeQueryForUser(userId, query);
+      const result: ScrapeResult = await this.scrapeWorker.scrapeQueryForUser(
+        userId,
+        query,
+      );
 
       this.logger.debug(
         `Search completed. Listings found: ${result.listings.length}`,
@@ -133,7 +137,7 @@ export class BotUpdate {
       }
 
       // Get the first (latest) listing
-      const listing = result.listings[0] as Listing;
+      const listing = result.listings[0];
       this.logger.debug(
         `Sending first listing: "${listing.title}" (ID: ${listing.id})`,
       );
@@ -199,54 +203,15 @@ export class BotUpdate {
   }
 
   private async sendListing(ctx: Context, listing: Listing): Promise<void> {
-    const message = this.formatListingMessage(listing);
-    const keyboard = this.createListingKeyboard(listing);
+    const message = ListingMessageFormatter.format(listing);
+    const keyboard = ListingKeyboard.create({
+      url: listing.url,
+      openButtonText: '🔗 Открыть на list.am',
+    });
 
     await ctx.reply(message, {
       parse_mode: 'HTML',
       reply_markup: keyboard,
     });
-  }
-
-  private formatListingMessage(listing: Listing): string {
-    const parts: string[] = [`<b>${this.escapeHtml(listing.title)}</b>`];
-
-    if (listing.priceText) {
-      parts.push(`💰 Цена: ${this.escapeHtml(listing.priceText)}`);
-    }
-
-    if (listing.locationText) {
-      parts.push(`📍 Локация: ${this.escapeHtml(listing.locationText)}`);
-    }
-
-    if (listing.postedAtText) {
-      parts.push(`🕐 Время: ${this.escapeHtml(listing.postedAtText)}`);
-    }
-
-    parts.push('');
-    parts.push(`🔗 ${listing.url}`);
-
-    return parts.join('\n');
-  }
-
-  private createListingKeyboard(listing: Listing): InlineKeyboardMarkup {
-    return {
-      inline_keyboard: [
-        [
-          {
-            text: '🔗 Открыть на list.am',
-            url: listing.url,
-          },
-        ],
-      ],
-    };
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 }

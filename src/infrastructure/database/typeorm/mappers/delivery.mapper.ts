@@ -1,9 +1,9 @@
+import { assignDefinedProps } from '@list-am-bot/common/utils/object.util';
 import { DeliveryEntity } from '@list-am-bot/domain/delivery/delivery.entity';
-
-import { DeliveryEntityDto } from '../entity-dtos/delivery.entity.dto';
+import { DeliveryEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/delivery.entity.dto';
 
 export class DeliveryMapper {
-  static toDomain(dto: DeliveryEntityDto): DeliveryEntity {
+  static toDomain = (dto: DeliveryEntityDto): DeliveryEntity => {
     return new DeliveryEntity({
       id: dto.id,
       userId: dto.userId,
@@ -12,7 +12,7 @@ export class DeliveryMapper {
       deliveredAt: dto.deliveredAt,
       messageId: dto.messageId,
     });
-  }
+  };
 
   static fromDomain(domain: DeliveryEntity): DeliveryEntityDto;
   static fromDomain(
@@ -23,13 +23,14 @@ export class DeliveryMapper {
   ): DeliveryEntityDto {
     const dto = new DeliveryEntityDto();
 
-    if (domain.id !== undefined) dto.id = domain.id;
-    if (domain.userId !== undefined) dto.userId = domain.userId;
-    if (domain.subscriptionId !== undefined)
-      dto.subscriptionId = domain.subscriptionId;
-    if (domain.listingId !== undefined) dto.listingId = domain.listingId;
-    if (domain.deliveredAt !== undefined) dto.deliveredAt = domain.deliveredAt;
-    if (domain.messageId !== undefined) dto.messageId = domain.messageId;
+    assignDefinedProps(dto, domain, [
+      'id',
+      'userId',
+      'subscriptionId',
+      'listingId',
+      'deliveredAt',
+      'messageId',
+    ]);
 
     return dto;
   }

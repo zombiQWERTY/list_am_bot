@@ -8,6 +8,7 @@ import {
 } from '@list-am-bot/application/scheduler/scrape-queue.service';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
+import { ScrapeResult } from '@list-am-bot/common/types/listing.types';
 import { delay, jitter } from '@list-am-bot/common/utils/delay.util';
 import { ScraperService } from '@list-am-bot/infrastructure/scraper/scraper.service';
 
@@ -184,34 +185,32 @@ export class ScrapeWorkerService {
   async scrapeQueryForUser(
     userId: number,
     query: string,
-  ): Promise<{ listings: unknown[]; error?: string }> {
+  ): Promise<ScrapeResult> {
     const taskId = `user-${userId}-${Date.now()}`;
 
-    return new Promise(
-      (
-        resolve: (value: { listings: unknown[]; error?: string }) => void,
-      ): void => {
-        this.scrapeQueue.addTask(
-          taskId,
-          ScrapePriority.USER_REQUEST,
-          async (): Promise<void> => {
-            try {
-              this.logger.log(`User ${userId} requested scrape: "${query}"`);
-              const result = await this.scraperService.scrapeQuery(query);
-              resolve({ listings: result.listings });
-            } catch (error) {
-              this.logger.error(`Failed to scrape for user ${userId}:`, error);
-              resolve({
-                listings: [],
-                error:
-                  error instanceof Error
-                    ? error.message
-                    : 'Unknown error occurred',
-              });
-            }
-          },
-        );
-      },
-    );
+    return new Promise((resolve: (value: ScrapeResult) => void): void => {
+      this.scrapeQueue.addTask(
+        taskId,
+        ScrapePriority.USER_REQUEST,
+        async (): Promise<void> => {
+          try {
+            this.logger.log(`User ${userId} requested scrape: "${query}"`);
+            const result = await this.scraperService.scrapeQuery(query);
+            resolve(result);
+          } catch (error) {
+            this.logger.error(`Failed to scrape for user ${userId}:`, error);
+            resolve({
+              query,
+              listings: [],
+              fetchedAt: new Date(),
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Unknown error occurred',
+            });
+          }
+        },
+      );
+    });
   }
 }

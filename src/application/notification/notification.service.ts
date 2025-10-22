@@ -1,14 +1,20 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
-import { InlineKeyboardMarkup } from 'telegraf/types';
 
 import { UserService } from '@list-am-bot/application/user/user.service';
+import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
+import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
 import { NotificationPayload } from '@list-am-bot/common/types/listing.types';
+import {
+  isTelegramBotBlocked,
+  isTelegramError,
+} from '@list-am-bot/common/utils/telegram-error.guard';
 import {
   DeliveryRepositoryPort,
   IDeliveryRepository,
 } from '@list-am-bot/domain/delivery/ports/delivery.repository.port';
+import { UserEntity } from '@list-am-bot/domain/user/user.entity';
 
 @Injectable()
 export class NotificationService {
@@ -27,82 +33,10 @@ export class NotificationService {
       `Attempting to send notification for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
     );
 
-    // Get internal user ID from database
-    const user = await this.userService.findByTelegramUserId(
-      payload.userTelegramId,
-    );
+    // Get or create user
+    const user = await this.findOrCreateUser(payload.userTelegramId);
 
-    if (!user) {
-      this.logger.warn(
-        `User with Telegram ID ${payload.userTelegramId} not found in database. Creating user...`,
-      );
-      // Create user if doesn't exist
-      const newUser = await this.userService.findOrCreate(
-        payload.userTelegramId,
-      );
-      // Check delivery with new user ID
-      const alreadySent = await this.deliveryRepository.exists(
-        newUser.id,
-        payload.listing.id,
-      );
-      if (alreadySent) {
-        this.logger.debug(
-          `Notification for listing ${payload.listing.id} already sent to user ${payload.userTelegramId}, skipping`,
-        );
-        return;
-      }
-
-      try {
-        const message = this.formatListingMessage(payload);
-        const keyboard = this.createListingKeyboard(payload);
-
-        this.logger.debug(
-          `Sending Telegram message to ${payload.userTelegramId}...`,
-        );
-        const sentMessage = await this.bot.telegram.sendMessage(
-          payload.userTelegramId,
-          message,
-          {
-            parse_mode: 'HTML',
-            reply_markup: keyboard,
-          },
-        );
-
-        await this.deliveryRepository.create(
-          newUser.id,
-          payload.subscriptionId,
-          payload.listing.id,
-          sentMessage.message_id.toString(),
-        );
-
-        this.logger.log(
-          `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
-        );
-      } catch (error: unknown) {
-        if (
-          error &&
-          typeof error === 'object' &&
-          'response' in error &&
-          error.response &&
-          typeof error.response === 'object' &&
-          'error_code' in error.response &&
-          error.response.error_code === 403
-        ) {
-          this.logger.warn(
-            `User ${payload.userTelegramId} blocked the bot. Skipping notification.`,
-          );
-          return;
-        }
-
-        this.logger.error(
-          `Failed to send notification to ${payload.userTelegramId}:`,
-          error,
-        );
-        throw error;
-      }
-      return;
-    }
-
+    // Check if already sent
     const alreadySent = await this.deliveryRepository.exists(
       user.id,
       payload.listing.id,
@@ -115,13 +49,45 @@ export class NotificationService {
       return;
     }
 
+    // Send notification
+    await this.sendTelegramNotification(user, payload);
+  }
+
+  private async findOrCreateUser(telegramUserId: number): Promise<UserEntity> {
+    const existingUser =
+      await this.userService.findByTelegramUserId(telegramUserId);
+
+    if (existingUser) {
+      return existingUser;
+    }
+
+    this.logger.warn(
+      `User with Telegram ID ${telegramUserId} not found in database. Creating user...`,
+    );
+
+    return this.userService.findOrCreate(telegramUserId);
+  }
+
+  private async sendTelegramNotification(
+    user: UserEntity,
+    payload: NotificationPayload,
+  ): Promise<void> {
     try {
-      const message = this.formatListingMessage(payload);
-      const keyboard = this.createListingKeyboard(payload);
+      const message = ListingMessageFormatter.format(payload.listing, {
+        includeQuery: true,
+        query: payload.query,
+      });
+
+      const keyboard = ListingKeyboard.create({
+        url: payload.listing.url,
+        subscriptionId: payload.subscriptionId,
+        includeUnsubscribe: true,
+      });
 
       this.logger.debug(
         `Sending Telegram message to ${payload.userTelegramId}...`,
       );
+
       const sentMessage = await this.bot.telegram.sendMessage(
         payload.userTelegramId,
         message,
@@ -142,82 +108,29 @@ export class NotificationService {
         `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
       );
     } catch (error: unknown) {
-      if (
-        error &&
-        typeof error === 'object' &&
-        'response' in error &&
-        error.response &&
-        typeof error.response === 'object' &&
-        'error_code' in error.response &&
-        error.response.error_code === 403
-      ) {
-        this.logger.warn(
-          `User ${payload.userTelegramId} blocked the bot. Skipping notification.`,
-        );
-        return;
-      }
+      this.handleTelegramError(error, payload.userTelegramId);
+    }
+  }
 
+  private handleTelegramError(error: unknown, telegramUserId: number): void {
+    if (isTelegramBotBlocked(error)) {
+      this.logger.warn(
+        `User ${telegramUserId} blocked the bot. Skipping notification.`,
+      );
+      return;
+    }
+
+    if (isTelegramError(error)) {
       this.logger.error(
-        `Failed to send notification to ${payload.userTelegramId}:`,
+        `Telegram API error ${error.response.error_code}: ${error.response.description || 'Unknown error'}`,
+      );
+    } else {
+      this.logger.error(
+        `Failed to send notification to ${telegramUserId}:`,
         error,
       );
-      throw error;
-    }
-  }
-
-  private formatListingMessage(payload: NotificationPayload): string {
-    const { listing, query } = payload;
-
-    const parts: string[] = [
-      `🔔 <b>Новое объявление</b> по запросу: "${this.escapeHtml(query)}"`,
-      '',
-      `<b>${this.escapeHtml(listing.title)}</b>`,
-    ];
-
-    if (listing.priceText) {
-      parts.push(`💰 Цена: ${this.escapeHtml(listing.priceText)}`);
     }
 
-    if (listing.locationText) {
-      parts.push(`📍 Локация: ${this.escapeHtml(listing.locationText)}`);
-    }
-
-    if (listing.postedAtText) {
-      parts.push(`🕐 Время: ${this.escapeHtml(listing.postedAtText)}`);
-    }
-
-    parts.push('');
-    parts.push(`🔗 ${listing.url}`);
-
-    return parts.join('\n');
-  }
-
-  private createListingKeyboard(
-    payload: NotificationPayload,
-  ): InlineKeyboardMarkup {
-    return {
-      inline_keyboard: [
-        [
-          {
-            text: '🔗 Открыть',
-            url: payload.listing.url,
-          },
-        ],
-        [
-          {
-            text: '🗑 Отписаться от этого запроса',
-            callback_data: `unsubscribe:${payload.subscriptionId}`,
-          },
-        ],
-      ],
-    };
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    throw error;
   }
 }

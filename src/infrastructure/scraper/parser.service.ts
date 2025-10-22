@@ -1,11 +1,11 @@
 import { createHash } from 'crypto';
-import { writeFileSync } from 'fs';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { type Cheerio, load } from 'cheerio';
 
 import { Listing } from '@list-am-bot/common/types/listing.types';
 
+// Cheerio doesn't export Element/AnyNode types properly, so we use any here
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CheerioElement = Cheerio<any>;
 
@@ -15,44 +15,13 @@ export class ParserService {
   extractListings(html: string, baseUrl: string): Listing[] {
     this.logger.debug(`Starting HTML parsing, HTML size: ${html.length} bytes`);
 
-    // Debug: log first 500 chars of HTML to see what we got
-    const htmlPreview = html.substring(0, 500).replace(/\s+/g, ' ');
-    this.logger.debug(`HTML preview: ${htmlPreview}...`);
-
-    // Debug: save HTML to file for inspection
-    try {
-      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `/tmp/list-am-${timestamp}.html`;
-      writeFileSync(filename, html);
-      this.logger.debug(`HTML saved to ${filename} for inspection`);
-    } catch (error) {
-      this.logger.warn('Failed to save HTML to file:', error);
-    }
-
     const $ = load(html);
     const listings: Listing[] = [];
     const seenIds = new Set<string>();
 
-    // Debug: Try different selectors to see what's on the page
-    const allLinks = $('a[href*="/item/"]');
-    const favContainers = $('a.fav-item-info-container');
-    const itemLinks = $('a.fav-item-info-container[href*="/item/"]');
-
-    this.logger.debug(`Total links with /item/: ${allLinks.length}`);
-    this.logger.debug(
-      `Elements with class fav-item-info-container: ${favContainers.length}`,
-    );
-    this.logger.debug(`Combined selector matches: ${itemLinks.length}`);
-
-    // Check page title to confirm we're on the right page
-    const pageTitle = $('title').text();
-    this.logger.debug(`Page title: "${pageTitle}"`);
-
     // list.am uses specific structure: <a class="fav-item-info-container">
     const elements = $('a.fav-item-info-container[href*="/item/"]');
-    this.logger.debug(
-      `Found ${elements.length} listing elements with selector 'a.fav-item-info-container[href*="/item/"]'`,
-    );
+    this.logger.debug(`Found ${elements.length} listing elements`);
 
     elements.each((index, element): void => {
       try {
@@ -125,100 +94,12 @@ export class ParserService {
     };
   }
 
-  private buildListing(
-    $titleEl: CheerioElement,
-    href: string,
-    baseUrl: string,
-    $contentEl?: CheerioElement,
-  ): Listing | null {
-    const fullUrl = new URL(href, baseUrl).toString();
-    const id = this.extractListingId(fullUrl, href);
-    const title = this.extractTitle($titleEl);
-
-    if (!title) return null;
-
-    const $el = $contentEl || $titleEl;
-
-    return {
-      id,
-      title,
-      priceText: this.extractPrice($el),
-      priceValue: this.parsePriceValue(this.extractPrice($el)),
-      locationText: this.extractLocation($el),
-      url: fullUrl,
-      imageUrl: this.extractImageUrl($el, baseUrl),
-      postedAtText: this.extractPostedAt($el),
-    };
-  }
-
   private extractListingId(fullUrl: string, href: string): string {
     const idMatch = href.match(/\/item\/(\d+)/);
     if (idMatch?.[1]) {
       return idMatch[1];
     }
     return this.hashUrl(fullUrl);
-  }
-
-  private extractTitle($el: CheerioElement): string {
-    const titleSelectors = [
-      '.gl-title',
-      '.title',
-      '.item-title',
-      '.name',
-      'h2',
-      'h3',
-      '.l-title',
-    ];
-
-    for (const selector of titleSelectors) {
-      const text = this.getTextContent($el.find(selector).first());
-      if (text) return text;
-    }
-
-    const fallbackText = this.getTextContent($el);
-    return fallbackText.substring(0, 200);
-  }
-
-  private extractPrice($el: CheerioElement): string | undefined {
-    const priceSelectors = [
-      '.price',
-      '.item-price',
-      '.gl-price',
-      '.l-price',
-      '.cost',
-      '[class*="price"]',
-    ];
-
-    return this.findTextBySelectors($el, priceSelectors);
-  }
-
-  private extractLocation($el: CheerioElement): string | undefined {
-    const locationSelectors = [
-      '.location',
-      '.item-location',
-      '.gl-location',
-      '.l-location',
-      '.address',
-      '[class*="location"]',
-    ];
-
-    return this.findTextBySelectors($el, locationSelectors);
-  }
-
-  private extractImageUrl(
-    $el: CheerioElement,
-    baseUrl: string,
-  ): string | undefined {
-    const $img = $el.find('img').first();
-    const src = $img.attr('src') || $img.attr('data-src');
-
-    if (!src) return undefined;
-
-    try {
-      return new URL(src, baseUrl).toString();
-    } catch {
-      return undefined;
-    }
   }
 
   private extractImageUrlFromListAm(
@@ -268,30 +149,6 @@ export class ParserService {
       }
     }
 
-    return undefined;
-  }
-
-  private extractPostedAt($el: CheerioElement): string | undefined {
-    const dateSelectors = [
-      '.date',
-      '.item-date',
-      '.gl-date',
-      '.l-date',
-      '.time',
-      '[class*="date"]',
-    ];
-
-    return this.findTextBySelectors($el, dateSelectors);
-  }
-
-  private findTextBySelectors(
-    $el: CheerioElement,
-    selectors: string[],
-  ): string | undefined {
-    for (const selector of selectors) {
-      const text = this.getTextContent($el.find(selector).first());
-      if (text) return text;
-    }
     return undefined;
   }
 

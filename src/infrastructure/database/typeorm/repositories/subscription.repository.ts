@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 
 import { ISubscriptionRepository } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
 import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
@@ -12,6 +12,7 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   constructor(
     @Inject(SubscriptionProviderToken)
     private readonly repo: Repository<SubscriptionEntityDto>,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(userId: number, query: string): Promise<SubscriptionEntity> {
@@ -74,5 +75,36 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
   async count(userId: number): Promise<number> {
     return this.repo.count({ where: { userId, isActive: true } });
+  }
+
+  async deleteWithSeenListings(subscriptionId: number): Promise<void> {
+    await this.dataSource.transaction(async (manager): Promise<void> => {
+      await manager.getRepository('seen_listing').delete({ subscriptionId });
+      await manager
+        .getRepository('subscription')
+        .delete({ id: subscriptionId });
+    });
+  }
+
+  async deleteAllWithSeenListings(userId: number): Promise<void> {
+    await this.dataSource.transaction(async (manager): Promise<void> => {
+      // Get subscription IDs first
+      const subscriptions = await manager.getRepository('subscription').find({
+        where: { userId },
+        select: ['id'],
+      });
+
+      const subscriptionIds = subscriptions.map((s: { id: number }) => s.id);
+
+      // Bulk delete seen listings
+      if (subscriptionIds.length > 0) {
+        await manager.getRepository('seen_listing').delete({
+          subscriptionId: In(subscriptionIds),
+        });
+      }
+
+      // Delete all subscriptions for user
+      await manager.getRepository('subscription').delete({ userId });
+    });
   }
 }

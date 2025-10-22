@@ -8,9 +8,8 @@ import {
 } from 'typeorm';
 
 import { UserEntity, UserLanguage } from '@list-am-bot/domain/user/user.entity';
-
-import { DeliveryEntityDto } from './delivery.entity.dto';
-import { SubscriptionEntityDto } from './subscription.entity.dto';
+import { DeliveryEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/delivery.entity.dto';
+import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 
 @Entity('user')
 export class UserEntityDto implements UserEntity {

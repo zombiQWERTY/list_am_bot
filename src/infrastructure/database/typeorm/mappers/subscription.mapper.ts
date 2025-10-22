@@ -1,9 +1,9 @@
+import { assignDefinedProps } from '@list-am-bot/common/utils/object.util';
 import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
-
-import { SubscriptionEntityDto } from '../entity-dtos/subscription.entity.dto';
+import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 
 export class SubscriptionMapper {
-  static toDomain(dto: SubscriptionEntityDto): SubscriptionEntity {
+  static toDomain = (dto: SubscriptionEntityDto): SubscriptionEntity => {
     return new SubscriptionEntity({
       id: dto.id,
       userId: dto.userId,
@@ -12,7 +12,7 @@ export class SubscriptionMapper {
       createdAt: dto.createdAt,
       updatedAt: dto.updatedAt,
     });
-  }
+  };
 
   static fromDomain(domain: SubscriptionEntity): SubscriptionEntityDto;
   static fromDomain(
@@ -23,12 +23,14 @@ export class SubscriptionMapper {
   ): SubscriptionEntityDto {
     const dto = new SubscriptionEntityDto();
 
-    if (domain.id !== undefined) dto.id = domain.id;
-    if (domain.userId !== undefined) dto.userId = domain.userId;
-    if (domain.query !== undefined) dto.query = domain.query;
-    if (domain.isActive !== undefined) dto.isActive = domain.isActive;
-    if (domain.createdAt !== undefined) dto.createdAt = domain.createdAt;
-    if (domain.updatedAt !== undefined) dto.updatedAt = domain.updatedAt;
+    assignDefinedProps(dto, domain, [
+      'id',
+      'userId',
+      'query',
+      'isActive',
+      'createdAt',
+      'updatedAt',
+    ]);
 
     return dto;
   }
