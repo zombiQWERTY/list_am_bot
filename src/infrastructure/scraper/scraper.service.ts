@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { ScraperException } from '@list-am-bot/common/exceptions/bot.exceptions';
@@ -7,15 +7,16 @@ import {
   SeenListingRepositoryPort,
   ISeenListingRepository,
 } from '@list-am-bot/domain/seen-listing/ports/seen-listing.repository.port';
-import { HttpClientService } from '@list-am-bot/infrastructure/scraper/http-client.service';
+import { BrowserService } from '@list-am-bot/infrastructure/scraper/browser/browser.service';
 import { ParserService } from '@list-am-bot/infrastructure/scraper/parser.service';
 
 @Injectable()
 export class ScraperService {
+  private readonly logger = new Logger(ScraperService.name);
   private readonly baseUrl: string;
 
   constructor(
-    private readonly httpClient: HttpClientService,
+    private readonly browserService: BrowserService,
     private readonly parser: ParserService,
     private readonly configService: ConfigService,
     @Inject(SeenListingRepositoryPort)
@@ -28,10 +29,16 @@ export class ScraperService {
   }
 
   async scrapeQuery(query: string): Promise<ScrapeResult> {
+    this.logger.log(`Starting scrape for query: "${query}"`);
+
     try {
       const searchUrl = this.parser.buildSearchUrl(this.baseUrl, query);
-      const html = await this.httpClient.fetchHtml(searchUrl);
+      const html = await this.browserService.fetchHtml(searchUrl);
       const listings = this.parser.extractListings(html, this.baseUrl);
+
+      this.logger.log(
+        `Scrape complete. Found ${listings.length} listings for "${query}"`,
+      );
 
       return {
         query,
@@ -39,6 +46,7 @@ export class ScraperService {
         fetchedAt: new Date(),
       };
     } catch (error) {
+      this.logger.error(`Scrape failed for query "${query}":`, error);
       throw new ScraperException(
         `Failed to scrape query "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`,
       );

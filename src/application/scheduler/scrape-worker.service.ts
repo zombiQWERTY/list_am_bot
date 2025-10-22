@@ -1,7 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { NotificationService } from '@list-am-bot/application/notification/notification.service';
+import {
+  ScrapeQueueService,
+  ScrapePriority,
+} from '@list-am-bot/application/scheduler/scrape-queue.service';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import { delay, jitter } from '@list-am-bot/common/utils/delay.util';
@@ -9,7 +13,7 @@ import { ScraperService } from '@list-am-bot/infrastructure/scraper/scraper.serv
 
 @Injectable()
 export class ScrapeWorkerService {
-  private isRunning = false;
+  private readonly logger = new Logger(ScrapeWorkerService.name);
   private readonly requestDelayMs: number;
 
   constructor(
@@ -18,6 +22,7 @@ export class ScrapeWorkerService {
     private readonly scraperService: ScraperService,
     private readonly notificationService: NotificationService,
     private readonly configService: ConfigService,
+    private readonly scrapeQueue: ScrapeQueueService,
   ) {
     this.requestDelayMs = this.configService.get<number>(
       'requestDelayMs',
@@ -25,23 +30,72 @@ export class ScrapeWorkerService {
     );
   }
 
-  async runCycle(): Promise<void> {
-    if (this.isRunning) {
-      // eslint-disable-next-line no-console
-      console.warn('Scrape cycle is already running, skipping...');
+  async initializeSubscription(
+    subscriptionId: number,
+    query: string,
+  ): Promise<void> {
+    try {
+      this.logger.log(
+        `Initializing subscription ${subscriptionId}: "${query}"`,
+      );
+
+      const scrapeResult = await this.scraperService.scrapeQuery(query);
+
+      if (scrapeResult.listings.length > 0) {
+        await this.scraperService.markListingsAsSeen(
+          subscriptionId,
+          scrapeResult.listings,
+        );
+
+        this.logger.log(
+          `✅ Initialized subscription "${query}" with ${scrapeResult.listings.length} existing listings marked as seen`,
+        );
+      } else {
+        this.logger.log(
+          `ℹ️  No existing listings found for subscription "${query}"`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `❌ Failed to initialize subscription ${subscriptionId} (${query}):`,
+        error,
+      );
+    }
+  }
+
+  /**
+   * Run scrape cycle through queue
+   * This is queued with LOW priority (cron job)
+   */
+  runCycle(): void {
+    const taskId = `cron-${Date.now()}`;
+
+    // Check if already queued
+    if (this.scrapeQueue.isTaskQueued(taskId)) {
+      this.logger.warn('Scrape cycle already queued, skipping...');
       return;
     }
 
-    this.isRunning = true;
+    this.scrapeQueue.addTask(
+      taskId,
+      ScrapePriority.CRON_JOB,
+      async (): Promise<void> => {
+        await this.executeCycle();
+      },
+    );
+  }
+
+  /**
+   * Execute the actual scrape cycle
+   */
+  private async executeCycle(): Promise<void> {
     const startTime = Date.now();
 
     try {
-      // eslint-disable-next-line no-console
-      console.log('Starting scrape cycle...');
+      this.logger.log('Starting scrape cycle...');
 
       const activeUsers = await this.userService.findAllActive();
-      // eslint-disable-next-line no-console
-      console.log(`Found ${activeUsers.length} active users`);
+      this.logger.log(`Found ${activeUsers.length} active users`);
 
       let totalNewListings = 0;
       let totalRequests = 0;
@@ -56,8 +110,7 @@ export class ScrapeWorkerService {
             continue;
           }
 
-          // eslint-disable-next-line no-console
-          console.log(
+          this.logger.log(
             `Processing ${subscriptions.length} subscriptions for user ${user.telegramUserId}`,
           );
 
@@ -76,8 +129,7 @@ export class ScrapeWorkerService {
               );
 
               if (newListings.length > 0) {
-                // eslint-disable-next-line no-console
-                console.log(
+                this.logger.log(
                   `Found ${newListings.length} new listings for subscription "${subscription.query}"`,
                 );
 
@@ -100,8 +152,7 @@ export class ScrapeWorkerService {
               }
             } catch (error) {
               totalErrors++;
-              // eslint-disable-next-line no-console
-              console.error(
+              this.logger.error(
                 `Error processing subscription ${subscription.id} (${subscription.query}):`,
                 error,
               );
@@ -109,22 +160,58 @@ export class ScrapeWorkerService {
           }
         } catch (error) {
           totalErrors++;
-          // eslint-disable-next-line no-console
-          console.error(`Error processing user ${user.telegramUserId}:`, error);
+          this.logger.error(
+            `Error processing user ${user.telegramUserId}:`,
+            error,
+          );
         }
       }
 
       const duration = Date.now() - startTime;
-      // eslint-disable-next-line no-console
-      console.log(
+      this.logger.log(
         `Scrape cycle completed in ${duration}ms. ` +
           `Requests: ${totalRequests}, New listings: ${totalNewListings}, Errors: ${totalErrors}`,
       );
     } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Fatal error in scrape cycle:', error);
-    } finally {
-      this.isRunning = false;
+      this.logger.error('Fatal error in scrape cycle:', error);
     }
+  }
+
+  /**
+   * Scrape a single query (for user requests like /last command)
+   * This is queued with MEDIUM priority
+   */
+  async scrapeQueryForUser(
+    userId: number,
+    query: string,
+  ): Promise<{ listings: unknown[]; error?: string }> {
+    const taskId = `user-${userId}-${Date.now()}`;
+
+    return new Promise(
+      (
+        resolve: (value: { listings: unknown[]; error?: string }) => void,
+      ): void => {
+        this.scrapeQueue.addTask(
+          taskId,
+          ScrapePriority.USER_REQUEST,
+          async (): Promise<void> => {
+            try {
+              this.logger.log(`User ${userId} requested scrape: "${query}"`);
+              const result = await this.scraperService.scrapeQuery(query);
+              resolve({ listings: result.listings });
+            } catch (error) {
+              this.logger.error(`Failed to scrape for user ${userId}:`, error);
+              resolve({
+                listings: [],
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : 'Unknown error occurred',
+              });
+            }
+          },
+        );
+      },
+    );
   }
 }

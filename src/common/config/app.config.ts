@@ -7,7 +7,6 @@ const configSchema = z.object({
   requestDelayMs: z.number().default(2500),
   maxRetries: z.number().default(3),
   listAmBaseUrl: z.string().url().default('https://www.list.am'),
-  proxyUrl: z.string().optional(),
   logLevel: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
   nodeEnv: z.enum(['development', 'production', 'test']).default('development'),
 });
@@ -28,7 +27,6 @@ export const validateAndLoadConfig = (): AppConfig => {
       ? parseInt(process.env.MAX_RETRIES, 10)
       : undefined,
     listAmBaseUrl: process.env.LISTAM_BASE_URL,
-    proxyUrl: process.env.PROXY_URL,
     logLevel: process.env.LOG_LEVEL,
     nodeEnv: process.env.NODE_ENV,
   };

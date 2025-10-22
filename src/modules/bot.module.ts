@@ -10,8 +10,10 @@ import { BotUpdate } from '@list-am-bot/interfaces/bot/bot.update';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 import { AddSubscriptionScene } from '@list-am-bot/interfaces/bot/scenes/add-subscription.scene';
+import { ScraperModule } from '@list-am-bot/modules/scraper.module';
 import { SubscriptionModule } from '@list-am-bot/modules/subscription.module';
 import { UserModule } from '@list-am-bot/modules/user.module';
+import { WorkerModule } from '@list-am-bot/modules/worker.module';
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { UserModule } from '@list-am-bot/modules/user.module';
     }),
     UserModule,
     SubscriptionModule,
+    ScraperModule,
+    WorkerModule,
     TypeOrmDatabaseModule,
   ],
   providers: [

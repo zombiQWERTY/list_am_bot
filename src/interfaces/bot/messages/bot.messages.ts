@@ -95,4 +95,32 @@ export class BotMessages {
   unknownCommand(): string {
     return 'Неизвестная команда. Используйте /menu для навигации.';
   }
+
+  lastCommandUsage(): string {
+    return (
+      '❌ Неверный формат команды.\n\n' +
+      'Использование: <code>/last поисковый запрос</code>\n\n' +
+      'Например: <code>/last Chevrolet Blazer</code>'
+    );
+  }
+
+  lastCommandSearching(query: string): string {
+    return `🔍 Ищу "${query}" на list.am...`;
+  }
+
+  lastCommandNoResults(query: string): string {
+    return `❌ По запросу "${query}" ничего не найдено.`;
+  }
+
+  lastCommandResult(query: string, count: number): string {
+    return `🔍 <b>Результаты поиска</b> по запросу: "${this.escapeHtml(query)}"\n\nНайдено: ${count} объявлений\n\nПоказываю последнее:`;
+  }
+
+  private escapeHtml(text: string): string {
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
 }

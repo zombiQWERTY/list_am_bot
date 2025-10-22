@@ -16,7 +16,8 @@ export class SchedulerService {
     );
   }
 
-  @Cron('0 * * * *')
+  // @Cron('0 * * * *')
+  @Cron('* * * * *')
   async handleCron(): Promise<void> {
     // eslint-disable-next-line no-console
     console.log('Cron job triggered');

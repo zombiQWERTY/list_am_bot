@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Scene, SceneEnter, On, Ctx } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { Message } from 'telegraf/types';
 
+import { ScrapeWorkerService } from '@list-am-bot/application/scheduler/scrape-worker.service';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import {
@@ -19,9 +20,12 @@ type SceneContext = Scenes.SceneContext;
 @Injectable()
 @Scene(ADD_SUBSCRIPTION_SCENE)
 export class AddSubscriptionScene {
+  private readonly logger = new Logger(AddSubscriptionScene.name);
+
   constructor(
     private readonly userService: UserService,
     private readonly subscriptionService: SubscriptionService,
+    private readonly scrapeWorkerService: ScrapeWorkerService,
     private readonly keyboards: BotKeyboards,
     private readonly messages: BotMessages,
   ) {}
@@ -29,6 +33,7 @@ export class AddSubscriptionScene {
   @SceneEnter()
   async onEnter(@Ctx() ctx: SceneContext): Promise<void> {
     await ctx.reply(this.messages.enterQuery(), {
+      parse_mode: 'HTML',
       reply_markup: this.keyboards.cancelButton(),
     });
   }
@@ -60,6 +65,18 @@ export class AddSubscriptionScene {
 
     try {
       const subscription = await this.subscriptionService.create(user.id, text);
+
+      // Initialize subscription in background (mark existing listings as seen)
+      // Don't await - let it run asynchronously
+      this.scrapeWorkerService
+        .initializeSubscription(subscription.id, subscription.query)
+        .catch((error): void => {
+          this.logger.error(
+            `Failed to initialize subscription ${subscription.id}:`,
+            error,
+          );
+        });
+
       await ctx.scene.leave();
       await ctx.reply(this.messages.subscriptionAdded(subscription.query), {
         reply_markup: this.keyboards.mainMenu(),

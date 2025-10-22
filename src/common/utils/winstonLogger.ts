@@ -38,7 +38,7 @@ const createPrintfFormatter = (appName: string): winston.Logform.Format =>
       }
     }
 
-    return `[Fintrack.${appName}] ${process.pid}   ${timestamp || ''}    ${level.toUpperCase()} ${contextStr} ${JSON.stringify(message, null, 2)}${metadataStr} ${ms || ''}`;
+    return `[ListAmBot.${appName}] ${process.pid}   ${timestamp || ''}    ${level.toUpperCase()} ${contextStr} ${JSON.stringify(message, null, 2)}${metadataStr} ${ms || ''}`;
   });
 
 const createCommonFormat = (appName: string): winston.Logform.Format =>

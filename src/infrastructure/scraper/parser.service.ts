@@ -1,7 +1,8 @@
 import { createHash } from 'crypto';
+import { writeFileSync } from 'fs';
 
-import { Injectable } from '@nestjs/common';
-import { type CheerioAPI, type Cheerio, load } from 'cheerio';
+import { Injectable, Logger } from '@nestjs/common';
+import { type Cheerio, load } from 'cheerio';
 
 import { Listing } from '@list-am-bot/common/types/listing.types';
 
@@ -10,66 +11,114 @@ type CheerioElement = Cheerio<any>;
 
 @Injectable()
 export class ParserService {
+  private readonly logger = new Logger(ParserService.name);
   extractListings(html: string, baseUrl: string): Listing[] {
+    this.logger.debug(`Starting HTML parsing, HTML size: ${html.length} bytes`);
+
+    // Debug: save HTML to file for inspection
+    try {
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const filename = `/tmp/list-am-${timestamp}.html`;
+      writeFileSync(filename, html);
+      this.logger.debug(`HTML saved to ${filename} for inspection`);
+    } catch (error) {
+      this.logger.warn('Failed to save HTML to file:', error);
+    }
+
     const $ = load(html);
     const listings: Listing[] = [];
     const seenIds = new Set<string>();
 
-    this.extractFromLinks($, listings, seenIds, baseUrl);
-    this.extractFromBlocks($, listings, seenIds, baseUrl);
+    // Debug: Try different selectors to see what's on the page
+    const allLinks = $('a[href*="/item/"]');
+    const favContainers = $('a.fav-item-info-container');
+    const itemLinks = $('a.fav-item-info-container[href*="/item/"]');
+
+    this.logger.debug(`Total links with /item/: ${allLinks.length}`);
+    this.logger.debug(
+      `Elements with class fav-item-info-container: ${favContainers.length}`,
+    );
+    this.logger.debug(`Combined selector matches: ${itemLinks.length}`);
+
+    // Check page title to confirm we're on the right page
+    const pageTitle = $('title').text();
+    this.logger.debug(`Page title: "${pageTitle}"`);
+
+    // list.am uses specific structure: <a class="fav-item-info-container">
+    const elements = $('a.fav-item-info-container[href*="/item/"]');
+    this.logger.debug(
+      `Found ${elements.length} listing elements with selector 'a.fav-item-info-container[href*="/item/"]'`,
+    );
+
+    elements.each((index, element): void => {
+      try {
+        const $el = $(element);
+        const href = $el.attr('href');
+        if (!href) {
+          this.logger.warn(`Element ${index} has no href attribute`);
+          return;
+        }
+
+        const listing = this.buildListingFromListAm($el, href, baseUrl);
+        if (listing && !seenIds.has(listing.id)) {
+          seenIds.add(listing.id);
+          listings.push(listing);
+          this.logger.debug(
+            `Parsed listing ${listings.length}: "${listing.title}" (${listing.id})`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(`Error parsing listing element ${index}:`, error);
+      }
+    });
+
+    this.logger.debug(
+      `Extraction complete. Total listings parsed: ${listings.length}`,
+    );
 
     return listings;
   }
 
-  private extractFromLinks(
-    $: CheerioAPI,
-    listings: Listing[],
-    seenIds: Set<string>,
+  private buildListingFromListAm(
+    $el: CheerioElement,
+    href: string,
     baseUrl: string,
-  ): void {
-    $('a[href*="/item/"]').each((_, element): void => {
-      try {
-        const $el = $(element);
-        const href = $el.attr('href');
-        if (!href) return;
+  ): Listing | null {
+    // Build URL and remove query parameters
+    const urlObj = new URL(href, baseUrl);
+    urlObj.search = ''; // Remove all query parameters like ?ld_src=2
+    const fullUrl = urlObj.toString();
+    const id = this.extractListingId(fullUrl, href);
 
-        const listing = this.buildListing($el, href, baseUrl);
-        if (listing && !seenIds.has(listing.id)) {
-          seenIds.add(listing.id);
-          listings.push(listing);
-        }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error parsing listing element:', error);
-      }
-    });
-  }
+    // Extract title from .dltitle .pt
+    const title = this.getTextContent($el.find('.dltitle .pt').first());
+    if (!title) return null;
 
-  private extractFromBlocks(
-    $: CheerioAPI,
-    listings: Listing[],
-    seenIds: Set<string>,
-    baseUrl: string,
-  ): void {
-    $('.dl, .gl-i, .list-item, .item').each((_, element): void => {
-      try {
-        const $el = $(element);
-        const $link = $el.find('a[href*="/item/"]').first();
-        const href = $link.attr('href');
-        if (!href) return;
+    // Extract price from .ad-info-line-wrapper .p
+    const priceText =
+      this.getTextContent($el.find('.ad-info-line-wrapper .p').first()) ||
+      undefined;
 
-        const $titleSource = $link.length > 0 ? $link : $el;
-        const listing = this.buildListing($titleSource, href, baseUrl, $el);
+    // Extract location from .at elements (there can be multiple, we want the one that looks like a location)
+    const locationText = this.extractLocationFromAt($el);
 
-        if (listing && !seenIds.has(listing.id)) {
-          seenIds.add(listing.id);
-          listings.push(listing);
-        }
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('Error parsing listing block:', error);
-      }
-    });
+    // Extract date from .d
+    const postedAtText =
+      this.getTextContent($el.find('.d').first()) || undefined;
+
+    // Extract image from img with data-original attribute
+    const imageUrl = this.extractImageUrlFromListAm($el, baseUrl);
+
+    return {
+      id,
+      title,
+      priceText,
+      priceValue: this.parsePriceValue(priceText),
+      locationText,
+      url: fullUrl,
+      imageUrl,
+      postedAtText,
+    };
   }
 
   private buildListing(
@@ -168,6 +217,56 @@ export class ParserService {
     }
   }
 
+  private extractImageUrlFromListAm(
+    $el: CheerioElement,
+    baseUrl: string,
+  ): string | undefined {
+    const $img = $el.find('img').first();
+    // list.am uses data-original attribute for lazy loading
+    const src =
+      $img.attr('data-original') || $img.attr('src') || $img.attr('data-src');
+
+    if (!src) return undefined;
+
+    // list.am uses protocol-relative URLs like //s.list.am/...
+    if (src.startsWith('//')) {
+      return `https:${src}`;
+    }
+
+    try {
+      return new URL(src, baseUrl).toString();
+    } catch {
+      return undefined;
+    }
+  }
+
+  private extractLocationFromAt($el: CheerioElement): string | undefined {
+    // list.am has multiple .at elements - some contain location, some contain other info
+    // Location is typically a standalone city name
+    const atElements = $el.find('.at');
+
+    for (let i = 0; i < atElements.length; i++) {
+      const text = this.getTextContent(atElements.eq(i));
+
+      // Skip elements that start with "Подходит для" (Suitable for)
+      if (text.startsWith('Подходит для') || text.startsWith('Suitable for')) {
+        continue;
+      }
+
+      // Skip elements that contain detailed car info (year, km, fuel type)
+      if (text.includes(',') && (text.includes('г.') || text.includes('км'))) {
+        continue;
+      }
+
+      // This is likely a location
+      if (text && text.length < 50) {
+        return text;
+      }
+    }
+
+    return undefined;
+  }
+
   private extractPostedAt($el: CheerioElement): string | undefined {
     const dateSelectors = [
       '.date',
@@ -211,9 +310,11 @@ export class ParserService {
   }
 
   buildSearchUrl(baseUrl: string, query: string): string {
-    const url = new URL(baseUrl);
-    url.searchParams.set('w', '1');
-    url.searchParams.set('query', query);
-    return url.toString();
+    // list.am uses /ru/category?q=search+terms format (with language prefix)
+    const url = new URL('/ru/category', baseUrl);
+    url.searchParams.set('q', query);
+    const searchUrl = url.toString();
+    this.logger.debug(`Built search URL: ${searchUrl}`);
+    return searchUrl;
   }
 }

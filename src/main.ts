@@ -38,7 +38,7 @@ async function bootstrap(): Promise<void> {
   const port = parseInt(process.env.SERVICE_REST_PORT || '0', 10);
   await app.listen(port);
 
-  logger.log(`🚀 Lending service is running on port ${port}`, 'Bootstrap');
+  logger.log(`🚀 List.am Bot is running on port ${port}`, 'Bootstrap');
   logger.log(
     `🌍 Environment: ${process.env.NODE_ENV || 'development'}`,
     'Bootstrap',

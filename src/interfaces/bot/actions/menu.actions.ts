@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Action, Ctx } from 'nestjs-telegraf';
+import { Action, Ctx, Update } from 'nestjs-telegraf';
 import { Context, Scenes } from 'telegraf';
 
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
@@ -10,6 +10,7 @@ import { ADD_SUBSCRIPTION_SCENE } from '@list-am-bot/interfaces/bot/scenes/add-s
 
 type SceneContext = Scenes.SceneContext;
 
+@Update()
 @Injectable()
 export class MenuActions {
   constructor(

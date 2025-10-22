@@ -3,6 +3,7 @@ import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
 import { InlineKeyboardMarkup } from 'telegraf/types';
 
+import { UserService } from '@list-am-bot/application/user/user.service';
 import { NotificationPayload } from '@list-am-bot/common/types/listing.types';
 import {
   DeliveryRepositoryPort,
@@ -16,11 +17,76 @@ export class NotificationService {
     private readonly bot: Telegraf<Context>,
     @Inject(DeliveryRepositoryPort)
     private readonly deliveryRepository: IDeliveryRepository,
+    private readonly userService: UserService,
   ) {}
 
   async sendListingNotification(payload: NotificationPayload): Promise<void> {
-    const alreadySent = await this.deliveryRepository.exists(
+    // Get internal user ID from database
+    const user = await this.userService.findByTelegramUserId(
       payload.userTelegramId,
+    );
+
+    if (!user) {
+      // eslint-disable-next-line no-console
+      console.warn(
+        `User with Telegram ID ${payload.userTelegramId} not found in database. Creating user...`,
+      );
+      // Create user if doesn't exist
+      const newUser = await this.userService.findOrCreate(
+        payload.userTelegramId,
+      );
+      // Check delivery with new user ID
+      const alreadySent = await this.deliveryRepository.exists(
+        newUser.id,
+        payload.listing.id,
+      );
+      if (alreadySent) {
+        return;
+      }
+
+      try {
+        const message = this.formatListingMessage(payload);
+        const keyboard = this.createListingKeyboard(payload);
+
+        const sentMessage = await this.bot.telegram.sendMessage(
+          payload.userTelegramId,
+          message,
+          {
+            parse_mode: 'HTML',
+            reply_markup: keyboard,
+          },
+        );
+
+        await this.deliveryRepository.create(
+          newUser.id,
+          payload.subscriptionId,
+          payload.listing.id,
+          sentMessage.message_id.toString(),
+        );
+      } catch (error: unknown) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'error_code' in error.response &&
+          error.response.error_code === 403
+        ) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            `User ${payload.userTelegramId} blocked the bot. Skipping notification.`,
+          );
+          return;
+        }
+
+        throw error;
+      }
+      return;
+    }
+
+    const alreadySent = await this.deliveryRepository.exists(
+      user.id,
       payload.listing.id,
     );
 
@@ -42,7 +108,7 @@ export class NotificationService {
       );
 
       await this.deliveryRepository.create(
-        payload.userTelegramId,
+        user.id,
         payload.subscriptionId,
         payload.listing.id,
         sentMessage.message_id.toString(),
