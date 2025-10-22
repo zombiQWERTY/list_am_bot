@@ -15,6 +15,10 @@ export class ParserService {
   extractListings(html: string, baseUrl: string): Listing[] {
     this.logger.debug(`Starting HTML parsing, HTML size: ${html.length} bytes`);
 
+    // Debug: log first 500 chars of HTML to see what we got
+    const htmlPreview = html.substring(0, 500).replace(/\s+/g, ' ');
+    this.logger.debug(`HTML preview: ${htmlPreview}...`);
+
     // Debug: save HTML to file for inspection
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');

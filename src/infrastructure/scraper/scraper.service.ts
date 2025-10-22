@@ -7,7 +7,7 @@ import {
   SeenListingRepositoryPort,
   ISeenListingRepository,
 } from '@list-am-bot/domain/seen-listing/ports/seen-listing.repository.port';
-import { BrowserService } from '@list-am-bot/infrastructure/scraper/browser/browser.service';
+import { FlaresolvrrService } from '@list-am-bot/infrastructure/scraper/flaresolverr/flaresolverr.service';
 import { ParserService } from '@list-am-bot/infrastructure/scraper/parser.service';
 
 @Injectable()
@@ -16,7 +16,7 @@ export class ScraperService {
   private readonly baseUrl: string;
 
   constructor(
-    private readonly browserService: BrowserService,
+    private readonly flaresolvrrService: FlaresolvrrService,
     private readonly parser: ParserService,
     private readonly configService: ConfigService,
     @Inject(SeenListingRepositoryPort)
@@ -28,17 +28,30 @@ export class ScraperService {
     );
   }
 
-  async scrapeQuery(query: string): Promise<ScrapeResult> {
+  async scrapeQuery(query: string, retryOnEmpty = true): Promise<ScrapeResult> {
     this.logger.log(`Starting scrape for query: "${query}"`);
 
     try {
       const searchUrl = this.parser.buildSearchUrl(this.baseUrl, query);
-      const html = await this.browserService.fetchHtml(searchUrl);
+
+      // Use FlareSolverr for scraping
+      const html = await this.flaresolvrrService.fetchHtml(searchUrl);
       const listings = this.parser.extractListings(html, this.baseUrl);
 
       this.logger.log(
         `Scrape complete. Found ${listings.length} listings for "${query}"`,
       );
+
+      // If we got 0 listings, it might be Cloudflare blocking
+      // Retry once (FlareSolverr will handle it internally)
+      if (listings.length === 0 && retryOnEmpty) {
+        this.logger.warn(
+          `⚠️  Got 0 listings (suspicious - likely Cloudflare). Retrying...`,
+        );
+
+        // Retry without retryOnEmpty to avoid infinite loop
+        return this.scrapeQuery(query, false);
+      }
 
       return {
         query,

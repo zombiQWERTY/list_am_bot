@@ -28,6 +28,23 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
+  list_am_bot.flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: list_am_bot.flaresolverr
+    profiles: [system]
+    env_file: .env
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_FILE=${LOG_FILE:-none}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+      - TZ=Asia/Yerevan
+    ports:
+      - '${FLARESOLVERR_PORT:-8191}:8191'
+    volumes:
+      - ./.docker/flaresolver:/config
+    restart: unless-stopped
+
   list_am_bot.core:
     image: list_am_bot-dev:latest
     entrypoint: /tmp/entrypoint.sh

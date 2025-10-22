@@ -171,25 +171,40 @@ export class ProxyManagerService implements OnModuleInit {
   }
 
   /**
-   * Find proxy with available capacity
+   * Find proxy with available capacity (with round-robin)
    */
   private async findAvailableProxy(
     sessionType: SessionType,
   ): Promise<ProxyDescriptor> {
     const maxConnections = PROXY_CONFIG.concurrency[sessionType];
+    const totalProxies = this.healthyProxyIds.length;
 
-    for (const proxyId of this.healthyProxyIds) {
+    if (totalProxies === 0) {
+      throw new Error('No healthy proxies available');
+    }
+
+    // Try all proxies starting from current rotatingIndex (round-robin)
+    for (let i = 0; i < totalProxies; i++) {
+      const index = (this.rotatingIndex + i) % totalProxies;
+      const proxyId = this.healthyProxyIds[index];
       const proxy = this.proxyPool.get(proxyId);
+
       if (!proxy) continue;
 
       const currentQueue = this.proxyQueues.get(proxyId) || 0;
 
       if (currentQueue < maxConnections) {
+        // Increment for next call (round-robin)
+        this.rotatingIndex = (index + 1) % totalProxies;
+
+        this.logger.debug(
+          `Selected proxy ${proxy.id} (queue: ${currentQueue}/${maxConnections})`,
+        );
+
         return proxy;
       }
     }
 
-    // If no proxy available, wait and retry
     this.logger.warn('No proxy with available capacity, waiting 5s...');
     await delay(5000);
     return this.findAvailableProxy(sessionType);

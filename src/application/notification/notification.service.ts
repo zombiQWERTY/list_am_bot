@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
 import { InlineKeyboardMarkup } from 'telegraf/types';
@@ -12,6 +12,8 @@ import {
 
 @Injectable()
 export class NotificationService {
+  private readonly logger = new Logger(NotificationService.name);
+
   constructor(
     @InjectBot()
     private readonly bot: Telegraf<Context>,
@@ -21,14 +23,17 @@ export class NotificationService {
   ) {}
 
   async sendListingNotification(payload: NotificationPayload): Promise<void> {
+    this.logger.debug(
+      `Attempting to send notification for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
+    );
+
     // Get internal user ID from database
     const user = await this.userService.findByTelegramUserId(
       payload.userTelegramId,
     );
 
     if (!user) {
-      // eslint-disable-next-line no-console
-      console.warn(
+      this.logger.warn(
         `User with Telegram ID ${payload.userTelegramId} not found in database. Creating user...`,
       );
       // Create user if doesn't exist
@@ -41,6 +46,9 @@ export class NotificationService {
         payload.listing.id,
       );
       if (alreadySent) {
+        this.logger.debug(
+          `Notification for listing ${payload.listing.id} already sent to user ${payload.userTelegramId}, skipping`,
+        );
         return;
       }
 
@@ -48,6 +56,9 @@ export class NotificationService {
         const message = this.formatListingMessage(payload);
         const keyboard = this.createListingKeyboard(payload);
 
+        this.logger.debug(
+          `Sending Telegram message to ${payload.userTelegramId}...`,
+        );
         const sentMessage = await this.bot.telegram.sendMessage(
           payload.userTelegramId,
           message,
@@ -63,6 +74,10 @@ export class NotificationService {
           payload.listing.id,
           sentMessage.message_id.toString(),
         );
+
+        this.logger.log(
+          `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
+        );
       } catch (error: unknown) {
         if (
           error &&
@@ -73,13 +88,16 @@ export class NotificationService {
           'error_code' in error.response &&
           error.response.error_code === 403
         ) {
-          // eslint-disable-next-line no-console
-          console.warn(
+          this.logger.warn(
             `User ${payload.userTelegramId} blocked the bot. Skipping notification.`,
           );
           return;
         }
 
+        this.logger.error(
+          `Failed to send notification to ${payload.userTelegramId}:`,
+          error,
+        );
         throw error;
       }
       return;
@@ -91,6 +109,9 @@ export class NotificationService {
     );
 
     if (alreadySent) {
+      this.logger.debug(
+        `Notification for listing ${payload.listing.id} already sent to user ${payload.userTelegramId}, skipping`,
+      );
       return;
     }
 
@@ -98,6 +119,9 @@ export class NotificationService {
       const message = this.formatListingMessage(payload);
       const keyboard = this.createListingKeyboard(payload);
 
+      this.logger.debug(
+        `Sending Telegram message to ${payload.userTelegramId}...`,
+      );
       const sentMessage = await this.bot.telegram.sendMessage(
         payload.userTelegramId,
         message,
@@ -113,6 +137,10 @@ export class NotificationService {
         payload.listing.id,
         sentMessage.message_id.toString(),
       );
+
+      this.logger.log(
+        `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
+      );
     } catch (error: unknown) {
       if (
         error &&
@@ -123,13 +151,16 @@ export class NotificationService {
         'error_code' in error.response &&
         error.response.error_code === 403
       ) {
-        // eslint-disable-next-line no-console
-        console.warn(
+        this.logger.warn(
           `User ${payload.userTelegramId} blocked the bot. Skipping notification.`,
         );
         return;
       }
 
+      this.logger.error(
+        `Failed to send notification to ${payload.userTelegramId}:`,
+        error,
+      );
       throw error;
     }
   }
