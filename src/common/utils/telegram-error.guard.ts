@@ -1,6 +1,3 @@
-/**
- * Type guard to check if error is a Telegram API error with specific code
- */
 export interface TelegramError {
   response: {
     error_code: number;

@@ -1,0 +1,17 @@
+FROM node:20-alpine
+WORKDIR /usr/src/app
+
+COPY ./package.json .
+COPY ./package-lock.json .
+
+COPY ./tsconfig.json .
+COPY ./tsconfig.build.json .
+
+COPY ./nest-cli.json .
+
+COPY ./src ./src
+
+COPY ./infra/prod/build_apps.sh /usr/src/app/build_apps.sh
+
+RUN npm set progress=false && npm config set depth 0 && npm ci && \
+    chmod +x /usr/src/app/build_apps.sh && /usr/src/app/build_apps.sh

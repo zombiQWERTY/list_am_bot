@@ -33,10 +33,8 @@ export class NotificationService {
       `Attempting to send notification for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
     );
 
-    // Get or create user
     const user = await this.findOrCreateUser(payload.userTelegramId);
 
-    // Check if already sent
     const alreadySent = await this.deliveryRepository.exists(
       user.id,
       payload.listing.id,
@@ -49,7 +47,6 @@ export class NotificationService {
       return;
     }
 
-    // Send notification
     await this.sendTelegramNotification(user, payload);
   }
 

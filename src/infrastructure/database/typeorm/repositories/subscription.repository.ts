@@ -88,22 +88,21 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
   async deleteAllWithSeenListings(userId: number): Promise<void> {
     await this.dataSource.transaction(async (manager): Promise<void> => {
-      // Get subscription IDs first
       const subscriptions = await manager.getRepository('subscription').find({
         where: { userId },
         select: ['id'],
       });
 
-      const subscriptionIds = subscriptions.map((s: { id: number }) => s.id);
+      const subscriptionIds = subscriptions.map(
+        (s: { id: number }): number => s.id,
+      );
 
-      // Bulk delete seen listings
       if (subscriptionIds.length > 0) {
         await manager.getRepository('seen_listing').delete({
           subscriptionId: In(subscriptionIds),
         });
       }
 
-      // Delete all subscriptions for user
       await manager.getRepository('subscription').delete({ userId });
     });
   }

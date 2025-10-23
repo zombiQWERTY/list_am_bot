@@ -1,18 +1,20 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, UseFilters } from '@nestjs/common';
 import { Update, Start, Help, Command, On, Ctx, Action } from 'nestjs-telegraf';
-import { Context } from 'telegraf';
 
 import { ScrapeWorkerService } from '@list-am-bot/application/scheduler/scrape-worker.service';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
+import { TelegrafExceptionFilter } from '@list-am-bot/common/filters/telegraf-exception.filter';
 import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
 import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
 import { Listing, ScrapeResult } from '@list-am-bot/common/types/listing.types';
+import { BotContext } from '@list-am-bot/context/context.interface';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 
 @Update()
 @Injectable()
+@UseFilters(TelegrafExceptionFilter)
 export class BotUpdate {
   private readonly logger = new Logger(BotUpdate.name);
 
@@ -25,7 +27,7 @@ export class BotUpdate {
   ) {}
 
   @Start()
-  async onStart(@Ctx() ctx: Context): Promise<void> {
+  async onStart(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -39,21 +41,21 @@ export class BotUpdate {
   }
 
   @Help()
-  async onHelp(@Ctx() ctx: Context): Promise<void> {
+  async onHelp(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.reply(this.messages.help(), {
       parse_mode: 'HTML',
     });
   }
 
   @Command('menu')
-  async onMenu(@Ctx() ctx: Context): Promise<void> {
+  async onMenu(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.reply(this.messages.menu(), {
       reply_markup: this.keyboards.mainMenu(),
     });
   }
 
   @Command('status')
-  async onStatus(@Ctx() ctx: Context): Promise<void> {
+  async onStatus(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -73,7 +75,7 @@ export class BotUpdate {
   }
 
   @Command('last')
-  async onLast(@Ctx() ctx: Context): Promise<void> {
+  async onLast(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.message || !('text' in ctx.message)) return;
 
     const commandText = ctx.message.text;
@@ -83,7 +85,6 @@ export class BotUpdate {
       `/last command received from user ${ctx.from?.id}, query: "${query}"`,
     );
 
-    // Check if query is provided
     if (!query || query === '/last') {
       this.logger.debug('No query provided, showing usage message');
       await ctx.reply(this.messages.lastCommandUsage(), {
@@ -92,16 +93,13 @@ export class BotUpdate {
       return;
     }
 
-    // Send "searching" message
     const searchingMsg = await ctx.reply(
       this.messages.lastCommandSearching(query),
     );
 
     try {
-      // Get user ID for queue tracking
       const userId = ctx.from?.id || 0;
 
-      // Perform search through queue
       this.logger.debug(`Starting search for: "${query}"`);
       const result: ScrapeResult = await this.scrapeWorker.scrapeQueryForUser(
         userId,
@@ -112,7 +110,6 @@ export class BotUpdate {
         `Search completed. Listings found: ${result.listings.length}`,
       );
 
-      // Check for errors
       if (result.error) {
         this.logger.error(`Search failed: ${result.error}`);
         await ctx.telegram.editMessageText(
@@ -124,7 +121,6 @@ export class BotUpdate {
         return;
       }
 
-      // Check if there are results
       if (!result.listings || result.listings.length === 0) {
         this.logger.warn('No results found');
         await ctx.telegram.editMessageText(
@@ -136,19 +132,16 @@ export class BotUpdate {
         return;
       }
 
-      // Get the first (latest) listing
       const listing = result.listings[0];
       this.logger.debug(
         `Sending first listing: "${listing.title}" (ID: ${listing.id})`,
       );
 
-      // Delete searching message
       await ctx.telegram.deleteMessage(
         ctx.chat?.id || 0,
         searchingMsg.message_id,
       );
 
-      // Send result header
       await ctx.reply(
         this.messages.lastCommandResult(query, result.listings.length),
         {
@@ -156,7 +149,6 @@ export class BotUpdate {
         },
       );
 
-      // Send listing
       await this.sendListing(ctx, listing);
       this.logger.log('/last command completed successfully');
     } catch (error) {
@@ -171,7 +163,7 @@ export class BotUpdate {
   }
 
   @Action(/^unsubscribe:(\d+)$/)
-  async onUnsubscribe(@Ctx() ctx: Context): Promise<void> {
+  async onUnsubscribe(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
       return;
     }
@@ -196,13 +188,13 @@ export class BotUpdate {
   }
 
   @On('text')
-  async onText(@Ctx() ctx: Context): Promise<void> {
+  async onText(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.reply(this.messages.unknownCommand(), {
       reply_markup: this.keyboards.mainMenu(),
     });
   }
 
-  private async sendListing(ctx: Context, listing: Listing): Promise<void> {
+  private async sendListing(ctx: BotContext, listing: Listing): Promise<void> {
     const message = ListingMessageFormatter.format(listing);
     const keyboard = ListingKeyboard.create({
       url: listing.url,

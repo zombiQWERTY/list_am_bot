@@ -16,11 +16,10 @@ export class SchedulerService {
     );
   }
 
-  // @Cron('0 * * * *')
-  @Cron('* * * * *')
-  async handleCron(): Promise<void> {
+  @Cron('0 * * * *')
+  handleCron(): void {
     // eslint-disable-next-line no-console
     console.log('Cron job triggered');
-    await this.scrapeWorker.runCycle();
+    this.scrapeWorker.runCycle();
   }
 }

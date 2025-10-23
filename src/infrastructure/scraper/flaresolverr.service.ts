@@ -22,17 +22,13 @@ interface FlareSolverrResponse {
     cookies: Array<{ name: string; value: string; domain: string }>;
     userAgent: string;
     headers: Record<string, string>;
-    response: string; // HTML content
+    response: string;
   };
   startTimestamp: number;
   endTimestamp: number;
   version: string;
 }
 
-/**
- * FlareSolverr Service
- * Alternative Cloudflare bypass using FlareSolverr proxy service
- */
 @Injectable()
 export class FlaresolvrrService {
   private readonly logger = new Logger(FlaresolvrrService.name);
@@ -52,16 +48,13 @@ export class FlaresolvrrService {
 
     this.client = axios.create({
       baseURL: this.baseUrl,
-      timeout: this.maxTimeout + 5000, // Add 5s buffer
+      timeout: this.maxTimeout + 5000,
       headers: {
         'Content-Type': 'application/json',
       },
     });
   }
 
-  /**
-   * Fetch HTML using FlareSolverr
-   */
   async fetchHtml(url: string, proxy?: string): Promise<string> {
     this.logger.debug(`Fetching URL via FlareSolverr: ${url}`);
 
@@ -71,7 +64,6 @@ export class FlaresolvrrService {
       maxTimeout: this.maxTimeout,
     };
 
-    // Add proxy if provided
     if (proxy) {
       requestData.proxy = { url: proxy };
       this.logger.debug(`Using proxy: ${proxy}`);
@@ -99,7 +91,6 @@ export class FlaresolvrrService {
         `✅ FlareSolverr success (${duration}ms): Status ${solution.status}, HTML size: ${solution.response.length} bytes`,
       );
 
-      // Log cookies for debugging
       if (solution.cookies && solution.cookies.length > 0) {
         this.logger.debug(
           `Received ${solution.cookies.length} cookies from FlareSolverr`,
@@ -124,9 +115,6 @@ export class FlaresolvrrService {
     }
   }
 
-  /**
-   * Test FlareSolverr connectivity
-   */
   async testConnection(): Promise<boolean> {
     try {
       this.logger.log('Testing FlareSolverr connection...');
@@ -152,9 +140,6 @@ export class FlaresolvrrService {
     }
   }
 
-  /**
-   * Get FlareSolverr health status
-   */
   async getHealth(): Promise<{
     enabled: boolean;
     available: boolean;

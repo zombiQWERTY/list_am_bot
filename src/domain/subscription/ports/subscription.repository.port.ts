@@ -20,16 +20,10 @@ export interface ISubscriptionRepository {
 
   delete(id: number): Promise<void>;
 
-  /**
-   * Delete subscription with all related seen listings atomically
-   */
   deleteWithSeenListings(subscriptionId: number): Promise<void>;
 
   deleteAllByUserId(userId: number): Promise<void>;
 
-  /**
-   * Delete all subscriptions for user with all related seen listings atomically
-   */
   deleteAllWithSeenListings(userId: number): Promise<void>;
 
   count(userId: number): Promise<number>;

@@ -64,14 +64,9 @@ export class ScrapeWorkerService {
     }
   }
 
-  /**
-   * Run scrape cycle through queue
-   * This is queued with LOW priority (cron job)
-   */
   runCycle(): void {
     const taskId = `cron-${Date.now()}`;
 
-    // Check if already queued
     if (this.scrapeQueue.isTaskQueued(taskId)) {
       this.logger.warn('Scrape cycle already queued, skipping...');
       return;
@@ -86,9 +81,6 @@ export class ScrapeWorkerService {
     );
   }
 
-  /**
-   * Execute the actual scrape cycle
-   */
   private async executeCycle(): Promise<void> {
     const startTime = Date.now();
 
@@ -178,10 +170,6 @@ export class ScrapeWorkerService {
     }
   }
 
-  /**
-   * Scrape a single query (for user requests like /last command)
-   * This is queued with MEDIUM priority
-   */
   async scrapeQueryForUser(
     userId: number,
     query: string,

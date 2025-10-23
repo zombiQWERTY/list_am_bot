@@ -6,9 +6,6 @@ export interface ListingMessageOptions {
   query?: string;
 }
 
-/**
- * Format listing data into a Telegram message
- */
 export class ListingMessageFormatter {
   static format(listing: Listing, options: ListingMessageOptions = {}): string {
     const parts: string[] = [];

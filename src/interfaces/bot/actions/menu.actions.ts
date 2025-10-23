@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UseFilters } from '@nestjs/common';
 import { Action, Ctx, Update } from 'nestjs-telegraf';
-import { Context, Scenes } from 'telegraf';
 
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
+import { TelegrafExceptionFilter } from '@list-am-bot/common/filters/telegraf-exception.filter';
+import { BotContext } from '@list-am-bot/context/context.interface';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 import { ADD_SUBSCRIPTION_SCENE } from '@list-am-bot/interfaces/bot/scenes/add-subscription.scene';
 
-type SceneContext = Scenes.SceneContext;
-
 @Update()
 @Injectable()
+@UseFilters(TelegrafExceptionFilter)
 export class MenuActions {
   constructor(
     private readonly userService: UserService,
@@ -21,7 +21,7 @@ export class MenuActions {
   ) {}
 
   @Action('menu:list')
-  async showList(@Ctx() ctx: Context): Promise<void> {
+  async showList(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -54,13 +54,13 @@ export class MenuActions {
   }
 
   @Action('menu:add')
-  async addSubscription(@Ctx() ctx: SceneContext): Promise<void> {
+  async addSubscription(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
     await ctx.scene.enter(ADD_SUBSCRIPTION_SCENE);
   }
 
   @Action('menu:clear')
-  async confirmClear(@Ctx() ctx: Context): Promise<void> {
+  async confirmClear(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
     await ctx.editMessageText(this.messages.confirmClear(), {
       reply_markup: this.keyboards.confirmClear(),
@@ -68,7 +68,7 @@ export class MenuActions {
   }
 
   @Action('clear:yes')
-  async clearAll(@Ctx() ctx: Context): Promise<void> {
+  async clearAll(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -88,7 +88,7 @@ export class MenuActions {
   }
 
   @Action('clear:no')
-  async cancelClear(@Ctx() ctx: Context): Promise<void> {
+  async cancelClear(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
     await ctx.editMessageText(this.messages.menu(), {
       reply_markup: this.keyboards.mainMenu(),
@@ -96,7 +96,7 @@ export class MenuActions {
   }
 
   @Action('menu:pause')
-  async pauseNotifications(@Ctx() ctx: Context): Promise<void> {
+  async pauseNotifications(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -116,7 +116,7 @@ export class MenuActions {
   }
 
   @Action('menu:resume')
-  async resumeNotifications(@Ctx() ctx: Context): Promise<void> {
+  async resumeNotifications(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.from) return;
 
     const userId = ctx.from.id;
@@ -136,7 +136,7 @@ export class MenuActions {
   }
 
   @Action('menu:back')
-  async backToMenu(@Ctx() ctx: Context): Promise<void> {
+  async backToMenu(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
     await ctx.editMessageText(this.messages.menu(), {
       reply_markup: this.keyboards.mainMenu(),
@@ -144,7 +144,7 @@ export class MenuActions {
   }
 
   @Action(/^delete:(\d+)$/)
-  async deleteSubscription(@Ctx() ctx: Context): Promise<void> {
+  async deleteSubscription(@Ctx() ctx: BotContext): Promise<void> {
     if (!ctx.callbackQuery || !('data' in ctx.callbackQuery)) {
       return;
     }

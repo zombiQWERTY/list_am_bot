@@ -7,9 +7,6 @@ export interface ListingKeyboardOptions {
   includeUnsubscribe?: boolean;
 }
 
-/**
- * Factory for creating listing-related keyboards
- */
 export class ListingKeyboard {
   static create(options: ListingKeyboardOptions): InlineKeyboardMarkup {
     const buttons: InlineKeyboardButton[][] = [

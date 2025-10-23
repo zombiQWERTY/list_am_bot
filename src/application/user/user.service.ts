@@ -19,7 +19,6 @@ export class UserService {
     telegramUserId: number,
     username?: string,
   ): Promise<UserEntity> {
-    // Try to find existing user first
     const existing =
       await this.userRepository.findByTelegramUserId(telegramUserId);
 
@@ -27,12 +26,9 @@ export class UserService {
       return existing;
     }
 
-    // Try to create, but handle race condition
     try {
       return await this.userRepository.create(telegramUserId, username);
     } catch (error) {
-      // If unique constraint violation (duplicate telegramUserId), fetch the user
-      // This can happen if two requests come at the same time
       if (this.isDuplicateKeyError(error)) {
         this.logger.debug(
           `Race condition detected for telegramUserId ${telegramUserId}, fetching existing user`,
@@ -43,14 +39,12 @@ export class UserService {
           return user;
         }
       }
-      // Re-throw if it's a different error
       throw error;
     }
   }
 
   private isDuplicateKeyError(error: unknown): boolean {
     if (error && typeof error === 'object' && 'code' in error) {
-      // PostgreSQL duplicate key error code
       return error.code === '23505';
     }
     return false;

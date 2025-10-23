@@ -1,5 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { Scene, SceneEnter, On, Ctx } from 'nestjs-telegraf';
+import { Injectable, Logger, UseFilters } from '@nestjs/common';
+import { Wizard, WizardStep, On, Ctx } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { Message } from 'telegraf/types';
 
@@ -10,15 +10,18 @@ import {
   DuplicateSubscriptionException,
   InvalidQueryException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
+import { TelegrafExceptionFilter } from '@list-am-bot/common/filters/telegraf-exception.filter';
+import { BotContext } from '@list-am-bot/context/context.interface';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 
 export const ADD_SUBSCRIPTION_SCENE = 'ADD_SUBSCRIPTION_SCENE';
 
-type SceneContext = Scenes.SceneContext;
+type WizardContext = Scenes.WizardContext & BotContext;
 
 @Injectable()
-@Scene(ADD_SUBSCRIPTION_SCENE)
+@Wizard(ADD_SUBSCRIPTION_SCENE)
+@UseFilters(TelegrafExceptionFilter)
 export class AddSubscriptionScene {
   private readonly logger = new Logger(AddSubscriptionScene.name);
 
@@ -30,69 +33,105 @@ export class AddSubscriptionScene {
     private readonly messages: BotMessages,
   ) {}
 
-  @SceneEnter()
-  async onEnter(@Ctx() ctx: SceneContext): Promise<void> {
+  @WizardStep(1)
+  async promptForQuery(@Ctx() ctx: WizardContext): Promise<void> {
+    await this.sendQueryPrompt(ctx);
+    ctx.wizard.next();
+  }
+
+  @WizardStep(2)
+  @On('text')
+  async onQueryInput(@Ctx() ctx: WizardContext): Promise<void> {
+    if (!ctx.from || !ctx.message || !('text' in ctx.message)) {
+      await this.leaveScene(ctx);
+      return;
+    }
+
+    const text = (ctx.message as Message.TextMessage).text;
+
+    if (this.isCancelCommand(text)) {
+      await this.handleCancel(ctx);
+      return;
+    }
+
+    const user = await this.userService.findByTelegramUserId(ctx.from.id);
+    if (!user) {
+      await this.handleUserNotFound(ctx);
+      return;
+    }
+
+    try {
+      const subscription = await this.subscriptionService.create(user.id, text);
+      await this.handleSubscriptionCreated(
+        ctx,
+        subscription.id,
+        subscription.query,
+      );
+    } catch (error) {
+      await this.handleSubscriptionError(ctx, error, text);
+    }
+  }
+
+  private async sendQueryPrompt(ctx: WizardContext): Promise<void> {
     await ctx.reply(this.messages.enterQuery(), {
       parse_mode: 'HTML',
       reply_markup: this.keyboards.cancelButton(),
     });
   }
 
-  @On('text')
-  async onText(@Ctx() ctx: SceneContext): Promise<void> {
-    if (!ctx.from || !ctx.message || !('text' in ctx.message)) {
-      return;
-    }
+  private isCancelCommand(text: string): boolean {
+    return text === '/cancel' || text.toLowerCase() === 'отмена';
+  }
 
-    const text = (ctx.message as Message.TextMessage).text;
+  private async handleCancel(ctx: WizardContext): Promise<void> {
+    await this.leaveScene(ctx);
+    await ctx.reply(this.messages.canceled(), {
+      reply_markup: this.keyboards.mainMenu(),
+    });
+  }
 
-    if (text === '/cancel' || text.toLowerCase() === 'отмена') {
-      await ctx.scene.leave();
-      await ctx.reply(this.messages.canceled(), {
-        reply_markup: this.keyboards.mainMenu(),
-      });
-      return;
-    }
+  private async handleUserNotFound(ctx: WizardContext): Promise<void> {
+    await this.leaveScene(ctx);
+    await ctx.reply(this.messages.userNotFound());
+  }
 
-    const userId = ctx.from.id;
-    const user = await this.userService.findByTelegramUserId(userId);
-
-    if (!user) {
-      await ctx.scene.leave();
-      await ctx.reply(this.messages.userNotFound());
-      return;
-    }
-
-    try {
-      const subscription = await this.subscriptionService.create(user.id, text);
-
-      // Initialize subscription in background (mark existing listings as seen)
-      // Don't await - let it run asynchronously
-      this.scrapeWorkerService
-        .initializeSubscription(subscription.id, subscription.query)
-        .catch((error): void => {
-          this.logger.error(
-            `Failed to initialize subscription ${subscription.id}:`,
-            error,
-          );
-        });
-
-      await ctx.scene.leave();
-      await ctx.reply(this.messages.subscriptionAdded(subscription.query), {
-        reply_markup: this.keyboards.mainMenu(),
-      });
-    } catch (error) {
-      if (error instanceof DuplicateSubscriptionException) {
-        await ctx.reply(this.messages.duplicateSubscription(text));
-      } else if (error instanceof InvalidQueryException) {
-        await ctx.reply(
-          this.messages.invalidQuery(
-            error.message || 'Неверный формат запроса',
-          ),
+  private async handleSubscriptionCreated(
+    ctx: WizardContext,
+    subscriptionId: number,
+    query: string,
+  ): Promise<void> {
+    this.scrapeWorkerService
+      .initializeSubscription(subscriptionId, query)
+      .catch((error): void => {
+        this.logger.error(
+          `Failed to initialize subscription ${subscriptionId}:`,
+          error,
         );
-      } else {
-        await ctx.reply(this.messages.error());
-      }
+      });
+
+    await this.leaveScene(ctx);
+    await ctx.reply(this.messages.subscriptionAdded(query), {
+      reply_markup: this.keyboards.mainMenu(),
+    });
+  }
+
+  private async handleSubscriptionError(
+    ctx: WizardContext,
+    error: unknown,
+    query: string,
+  ): Promise<void> {
+    if (error instanceof DuplicateSubscriptionException) {
+      await ctx.reply(this.messages.duplicateSubscription(query));
+    } else if (error instanceof InvalidQueryException) {
+      await ctx.reply(
+        this.messages.invalidQuery(error.message || 'Неверный формат запроса'),
+      );
+    } else {
+      await ctx.reply(this.messages.error());
     }
+  }
+
+  private async leaveScene(ctx: WizardContext): Promise<void> {
+    await ctx.scene.leave();
   }
 }

@@ -5,7 +5,6 @@ import { type Cheerio, load } from 'cheerio';
 
 import { Listing } from '@list-am-bot/common/types/listing.types';
 
-// Cheerio doesn't export Element/AnyNode types properly, so we use any here
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type CheerioElement = Cheerio<any>;
 
@@ -19,7 +18,6 @@ export class ParserService {
     const listings: Listing[] = [];
     const seenIds = new Set<string>();
 
-    // list.am uses specific structure: <a class="fav-item-info-container">
     const elements = $('a.fav-item-info-container[href*="/item/"]');
     this.logger.debug(`Found ${elements.length} listing elements`);
 
@@ -57,29 +55,23 @@ export class ParserService {
     href: string,
     baseUrl: string,
   ): Listing | null {
-    // Build URL and remove query parameters
     const urlObj = new URL(href, baseUrl);
-    urlObj.search = ''; // Remove all query parameters like ?ld_src=2
+    urlObj.search = '';
     const fullUrl = urlObj.toString();
     const id = this.extractListingId(fullUrl, href);
 
-    // Extract title from .dltitle .pt
     const title = this.getTextContent($el.find('.dltitle .pt').first());
     if (!title) return null;
 
-    // Extract price from .ad-info-line-wrapper .p
     const priceText =
       this.getTextContent($el.find('.ad-info-line-wrapper .p').first()) ||
       undefined;
 
-    // Extract location from .at elements (there can be multiple, we want the one that looks like a location)
     const locationText = this.extractLocationFromAt($el);
 
-    // Extract date from .d
     const postedAtText =
       this.getTextContent($el.find('.d').first()) || undefined;
 
-    // Extract image from img with data-original attribute
     const imageUrl = this.extractImageUrlFromListAm($el, baseUrl);
 
     return {
@@ -107,13 +99,11 @@ export class ParserService {
     baseUrl: string,
   ): string | undefined {
     const $img = $el.find('img').first();
-    // list.am uses data-original attribute for lazy loading
     const src =
       $img.attr('data-original') || $img.attr('src') || $img.attr('data-src');
 
     if (!src) return undefined;
 
-    // list.am uses protocol-relative URLs like //s.list.am/...
     if (src.startsWith('//')) {
       return `https:${src}`;
     }
@@ -126,24 +116,19 @@ export class ParserService {
   }
 
   private extractLocationFromAt($el: CheerioElement): string | undefined {
-    // list.am has multiple .at elements - some contain location, some contain other info
-    // Location is typically a standalone city name
     const atElements = $el.find('.at');
 
     for (let i = 0; i < atElements.length; i++) {
       const text = this.getTextContent(atElements.eq(i));
 
-      // Skip elements that start with "Подходит для" (Suitable for)
       if (text.startsWith('Подходит для') || text.startsWith('Suitable for')) {
         continue;
       }
 
-      // Skip elements that contain detailed car info (year, km, fuel type)
       if (text.includes(',') && (text.includes('г.') || text.includes('км'))) {
         continue;
       }
 
-      // This is likely a location
       if (text && text.length < 50) {
         return text;
       }
@@ -171,7 +156,6 @@ export class ParserService {
   }
 
   buildSearchUrl(baseUrl: string, query: string): string {
-    // list.am uses /ru/category?q=search+terms format (with language prefix)
     const url = new URL('/ru/category', baseUrl);
     url.searchParams.set('q', query);
     const searchUrl = url.toString();

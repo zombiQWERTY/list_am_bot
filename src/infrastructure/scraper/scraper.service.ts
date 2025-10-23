@@ -7,7 +7,7 @@ import {
   SeenListingRepositoryPort,
   ISeenListingRepository,
 } from '@list-am-bot/domain/seen-listing/ports/seen-listing.repository.port';
-import { FlaresolvrrService } from '@list-am-bot/infrastructure/scraper/flaresolverr/flaresolverr.service';
+import { FlaresolvrrService } from '@list-am-bot/infrastructure/scraper/flaresolverr.service';
 import { ParserService } from '@list-am-bot/infrastructure/scraper/parser.service';
 
 @Injectable()
