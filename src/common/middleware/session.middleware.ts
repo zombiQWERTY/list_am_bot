@@ -1,43 +1,22 @@
 import { Logger } from '@nestjs/common';
 import { Postgres } from '@telegraf/session/pg';
-import { Context, MiddlewareFn, session } from 'telegraf';
+import { Context, MiddlewareFn, session, SessionStore } from 'telegraf';
 
-export interface SessionConfig {
-  postgresUrl: string;
-  tableName?: string;
-}
+import { getDbConfig } from '@list-am-bot/common/config/database.config';
 
-export function createSessionMiddleware(
-  config: SessionConfig,
-): MiddlewareFn<Context> {
+export const getSessionMiddleware = (): MiddlewareFn<Context> => {
+  const dbConfig = getDbConfig();
   const logger = new Logger('SessionMiddleware');
 
-  if (!config.postgresUrl) {
-    logger.warn('PostgreSQL URL not provided, using in-memory session storage');
-    return session();
-  }
+  const store = Postgres({
+    config: {
+      connectionString: dbConfig.postgresBaseUrl,
+      options: `-c search_path=${dbConfig.postgresTelegrafSchema}`,
+    },
+    onInitError: (e: unknown): void => {
+      logger.error(e);
+    },
+  });
 
-  try {
-    const url = new URL(config.postgresUrl);
-
-    const store = Postgres<Record<string, unknown>>({
-      host: url.hostname,
-      port: url.port ? parseInt(url.port, 10) : 5432,
-      database: url.pathname.slice(1),
-      user: url.username,
-      password: url.password,
-      table: config.tableName || 'telegraf_sessions',
-      onInitError: (error: unknown): void => {
-        logger.error('PostgreSQL session storage init error', error);
-      },
-    });
-
-    logger.log('PostgreSQL session storage initialized');
-
-    return session({ store });
-  } catch (error) {
-    logger.error('Failed to initialize PostgreSQL session storage', error);
-    logger.warn('Falling back to in-memory session storage');
-    return session();
-  }
-}
+  return session({ store: store as SessionStore<Context> });
+};

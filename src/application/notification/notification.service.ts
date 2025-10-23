@@ -10,6 +10,7 @@ import {
   isTelegramBotBlocked,
   isTelegramError,
 } from '@list-am-bot/common/utils/telegram-error.guard';
+import { LIST_AM_BOT } from '@list-am-bot/constants';
 import {
   DeliveryRepositoryPort,
   IDeliveryRepository,
@@ -21,7 +22,7 @@ export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
-    @InjectBot()
+    @InjectBot(LIST_AM_BOT)
     private readonly bot: Telegraf<Context>,
     @Inject(DeliveryRepositoryPort)
     private readonly deliveryRepository: IDeliveryRepository,

@@ -1,8 +1,18 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 
-import { appConfigFactory } from '@list-am-bot/common/config/app.config';
-import { botConfig } from '@list-am-bot/common/config/bot.config';
+import {
+  appConfig,
+  AppSchemaType,
+} from '@list-am-bot/common/config/app.config';
+import {
+  botConfig,
+  BotSchemaType,
+} from '@list-am-bot/common/config/bot.config';
+import { postgresConfig } from '@list-am-bot/common/config/database.config';
+import { getSessionMiddleware } from '@list-am-bot/common/middleware/session.middleware';
+import { LIST_AM_BOT } from '@list-am-bot/constants';
 import { TypeOrmDatabaseModule } from '@list-am-bot/infrastructure/database/typeorm/typeorm-database.module';
 import { BotModule } from '@list-am-bot/modules/bot.module';
 import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
@@ -12,7 +22,30 @@ import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfigFactory, botConfig],
+      load: [appConfig, botConfig, postgresConfig],
+    }),
+    TelegrafModule.forRootAsync({
+      botName: LIST_AM_BOT,
+      inject: [botConfig.KEY, appConfig.KEY],
+      useFactory: (
+        botCfg: BotSchemaType,
+        appCfg: AppSchemaType,
+      ): TelegrafModuleOptions => ({
+        token: botCfg.botToken,
+        middlewares: [getSessionMiddleware()],
+        include: [BotModule],
+        launchOptions: {
+          allowedUpdates: ['message', 'callback_query'],
+          dropPendingUpdates: true,
+          webhook:
+            appCfg.node_env === 'production' && botCfg.botDomain
+              ? {
+                  domain: botCfg.botDomain,
+                  path: botCfg.botWebhookUrl || '/telegram-webhook',
+                }
+              : undefined,
+        },
+      }),
     }),
     TypeOrmDatabaseModule,
     BotModule,
