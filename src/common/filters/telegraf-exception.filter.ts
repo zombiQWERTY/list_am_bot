@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { TelegrafArgumentsHost } from 'nestjs-telegraf';
 import { Context } from 'telegraf';
 
+import { escapeHtml } from '@list-am-bot/common/utils/html.util';
+
 @Catch()
 export class TelegrafExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(TelegrafExceptionFilter.name);
@@ -55,7 +57,7 @@ export class TelegrafExceptionFilter implements ExceptionFilter {
     const lines: string[] = [
       `<b>🚨 Error in ${environment} environment</b>`,
       '',
-      `<b>Error:</b> ${this.escapeHtml(exception.message)}`,
+      `<b>Error:</b> ${escapeHtml(exception.message)}`,
       '',
     ];
 
@@ -70,24 +72,16 @@ export class TelegrafExceptionFilter implements ExceptionFilter {
     }
 
     if (ctx.message && 'text' in ctx.message) {
-      lines.push(`<b>Message:</b> ${this.escapeHtml(ctx.message.text)}`);
+      lines.push(`<b>Message:</b> ${escapeHtml(ctx.message.text)}`);
     }
 
     if (exception.stack) {
       const stackLines = exception.stack.split('\n').slice(0, 5);
       lines.push('', '<b>Stack trace:</b>', '<code>');
-      lines.push(...stackLines.map((line): string => this.escapeHtml(line)));
+      lines.push(...stackLines.map((line): string => escapeHtml(line)));
       lines.push('</code>');
     }
 
     return lines.join('\n');
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
   }
 }

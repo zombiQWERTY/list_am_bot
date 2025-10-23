@@ -107,7 +107,7 @@ export class GlobalExceptionsFilter implements ExceptionFilter {
       message: 'Unexpected error',
       errorCode: 'INTERNAL_SERVER_ERROR',
       additionalDetails: {
-        error: String(exception),
+        error: JSON.stringify(exception),
       },
     };
   }

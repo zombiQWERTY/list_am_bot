@@ -36,7 +36,7 @@ export class ScrapeWorkerService {
     query: string,
   ): Promise<void> {
     try {
-      this.logger.log(
+      this.logger.debug(
         `Initializing subscription ${subscriptionId}: "${query}"`,
       );
 
@@ -48,11 +48,11 @@ export class ScrapeWorkerService {
           scrapeResult.listings,
         );
 
-        this.logger.log(
+        this.logger.debug(
           `✅ Initialized subscription "${query}" with ${scrapeResult.listings.length} existing listings marked as seen`,
         );
       } else {
-        this.logger.log(
+        this.logger.debug(
           `ℹ️  No existing listings found for subscription "${query}"`,
         );
       }
@@ -68,7 +68,7 @@ export class ScrapeWorkerService {
     const taskId = `cron-${Date.now()}`;
 
     if (this.scrapeQueue.isTaskQueued(taskId)) {
-      this.logger.warn('Scrape cycle already queued, skipping...');
+      this.logger.debug('Scrape cycle already queued, skipping...');
       return;
     }
 
@@ -85,10 +85,10 @@ export class ScrapeWorkerService {
     const startTime = Date.now();
 
     try {
-      this.logger.log('Starting scrape cycle...');
+      this.logger.debug('Starting scrape cycle...');
 
       const activeUsers = await this.userService.findAllActive();
-      this.logger.log(`Found ${activeUsers.length} active users`);
+      this.logger.debug(`Found ${activeUsers.length} active users`);
 
       let totalNewListings = 0;
       let totalRequests = 0;
@@ -103,7 +103,7 @@ export class ScrapeWorkerService {
             continue;
           }
 
-          this.logger.log(
+          this.logger.debug(
             `Processing ${subscriptions.length} subscriptions for user ${user.telegramUserId}`,
           );
 
@@ -122,7 +122,7 @@ export class ScrapeWorkerService {
               );
 
               if (newListings.length > 0) {
-                this.logger.log(
+                this.logger.debug(
                   `Found ${newListings.length} new listings for subscription "${subscription.query}"`,
                 );
 
@@ -161,7 +161,7 @@ export class ScrapeWorkerService {
       }
 
       const duration = Date.now() - startTime;
-      this.logger.log(
+      this.logger.debug(
         `Scrape cycle completed in ${duration}ms. ` +
           `Requests: ${totalRequests}, New listings: ${totalNewListings}, Errors: ${totalErrors}`,
       );
@@ -182,7 +182,7 @@ export class ScrapeWorkerService {
         ScrapePriority.USER_REQUEST,
         async (): Promise<void> => {
           try {
-            this.logger.log(`User ${userId} requested scrape: "${query}"`);
+            this.logger.debug(`User ${userId} requested scrape: "${query}"`);
             const result = await this.scraperService.scrapeQuery(query);
             resolve(result);
           } catch (error) {

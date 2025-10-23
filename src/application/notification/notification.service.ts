@@ -102,7 +102,7 @@ export class NotificationService {
         sentMessage.message_id.toString(),
       );
 
-      this.logger.log(
+      this.logger.debug(
         `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
       );
     } catch (error: unknown) {
@@ -112,7 +112,7 @@ export class NotificationService {
 
   private handleTelegramError(error: unknown, telegramUserId: number): void {
     if (isTelegramBotBlocked(error)) {
-      this.logger.warn(
+      this.logger.debug(
         `User ${telegramUserId} blocked the bot. Skipping notification.`,
       );
       return;

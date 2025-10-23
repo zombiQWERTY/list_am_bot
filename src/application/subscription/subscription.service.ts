@@ -29,6 +29,7 @@ export class SubscriptionService {
       userId,
       trimmedQuery,
     );
+
     if (exists) {
       throw new DuplicateSubscriptionException(trimmedQuery);
     }

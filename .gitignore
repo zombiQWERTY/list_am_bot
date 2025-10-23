@@ -54,5 +54,19 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-examples
+
+# Examples and reference code (used during development)
+examples/
+
+# Docker
 .docker
+
+# Database
+*.sqlite
+*.sqlite3
+*.db
+
+# Misc
+.vscode-test
+.cache
+.turbo

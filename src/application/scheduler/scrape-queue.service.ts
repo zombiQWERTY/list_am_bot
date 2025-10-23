@@ -2,18 +2,12 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
 import { delay } from '@list-am-bot/common/utils/delay.util';
 
-/**
- * Priority levels for scrape tasks
- */
 export enum ScrapePriority {
   INITIALIZATION = 1, // New subscription initialization (highest priority)
   USER_REQUEST = 2, // User /last command
   CRON_JOB = 3, // Scheduled cron job (lowest priority)
 }
 
-/**
- * Scrape task definition
- */
 export interface ScrapeTask {
   id: string;
   priority: ScrapePriority;
@@ -21,10 +15,6 @@ export interface ScrapeTask {
   addedAt: Date;
 }
 
-/**
- * Scrape Queue Service
- * Manages a sequential queue of scraping tasks to prevent conflicts
- */
 @Injectable()
 export class ScrapeQueueService implements OnModuleInit {
   private readonly logger = new Logger(ScrapeQueueService.name);
@@ -34,15 +24,11 @@ export class ScrapeQueueService implements OnModuleInit {
 
   onModuleInit(): void {
     this.logger.log('✅ Scrape Queue Service initialized');
-    // Start processing queue
     this.processQueue().catch((error): void => {
       this.logger.error('Fatal error in queue processor:', error);
     });
   }
 
-  /**
-   * Add a task to the queue
-   */
   addTask(
     taskId: string,
     priority: ScrapePriority,
@@ -55,27 +41,22 @@ export class ScrapeQueueService implements OnModuleInit {
       addedAt: new Date(),
     };
 
-    // Check for duplicate task
     const existingIndex = this.queue.findIndex((t): boolean => t.id === taskId);
     if (existingIndex !== -1) {
-      this.logger.warn(
+      this.logger.debug(
         `Task ${taskId} already in queue, replacing with newer version`,
       );
       this.queue.splice(existingIndex, 1);
     }
 
-    // Add task and sort by priority
     this.queue.push(task);
     this.queue.sort((a, b): number => a.priority - b.priority);
 
-    this.logger.log(
+    this.logger.debug(
       `Task added: ${taskId} (priority: ${priority}, queue size: ${this.queue.length})`,
     );
   }
 
-  /**
-   * Get current queue status
-   */
   getStatus(): {
     queueSize: number;
     isProcessing: boolean;
@@ -96,21 +77,15 @@ export class ScrapeQueueService implements OnModuleInit {
     };
   }
 
-  /**
-   * Process queue continuously
-   */
   private async processQueue(): Promise<void> {
     while (true) {
       try {
-        // Wait a bit before checking queue
         await delay(100);
 
-        // Skip if already processing or queue is empty
         if (this.isProcessing || this.queue.length === 0) {
           continue;
         }
 
-        // Get next task
         const task = this.queue.shift();
         if (!task) {
           continue;
@@ -120,7 +95,7 @@ export class ScrapeQueueService implements OnModuleInit {
         this.currentTask = task;
 
         const waitTime = Date.now() - task.addedAt.getTime();
-        this.logger.log(
+        this.logger.debug(
           `Processing task: ${task.id} (waited: ${Math.round(waitTime / 1000)}s, remaining: ${this.queue.length})`,
         );
 
@@ -129,7 +104,7 @@ export class ScrapeQueueService implements OnModuleInit {
         try {
           await task.taskFn();
           const duration = Date.now() - startTime;
-          this.logger.log(
+          this.logger.debug(
             `✅ Task completed: ${task.id} (took: ${Math.round(duration / 1000)}s)`,
           );
         } catch (error) {
@@ -144,18 +119,12 @@ export class ScrapeQueueService implements OnModuleInit {
     }
   }
 
-  /**
-   * Clear all pending tasks (for testing/emergency)
-   */
   clearQueue(): void {
     const cleared = this.queue.length;
     this.queue = [];
     this.logger.warn(`Queue cleared: ${cleared} tasks removed`);
   }
 
-  /**
-   * Check if a specific task is in queue or processing
-   */
   isTaskQueued(taskId: string): boolean {
     return (
       this.queue.some((t): boolean => t.id === taskId) ||

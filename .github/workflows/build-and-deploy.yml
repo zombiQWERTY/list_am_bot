@@ -1,0 +1,206 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for base image
+        id: meta-base
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push base image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./infra/prod/Dockerfile.base
+          push: true
+          tags: ${{ steps.meta-base.outputs.tags }}
+          labels: ${{ steps.meta-base.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:latest
+          cache-to: type=inline
+          # Example: Pass build-time variables if needed
+          # build-args: |
+          #   NODE_ENV=${{ vars.NODE_ENV }}
+          #   BUILD_DATE=${{ github.event.head_commit.timestamp }}
+
+      - name: Extract metadata for app image
+        id: meta-app
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push app image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./infra/prod/Dockerfile
+          push: true
+          tags: ${{ steps.meta-app.outputs.tags }}
+          labels: ${{ steps.meta-app.outputs.labels }}
+          build-args: |
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
+          # Example: Add more build args from variables/secrets
+          # build-args: |
+          #   BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
+          #   NODE_ENV=${{ vars.NODE_ENV }}
+          #   APP_VERSION=${{ github.sha }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:latest
+          cache-to: type=inline
+
+    outputs:
+      base-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
+      app-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:${{ github.ref_name }}
+
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: read
+      packages: read
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: list_am_bot
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: list_am_bot_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run tests in Docker
+        run: |
+          docker run --rm \
+            --network host \
+            -e POSTGRES_HOST=localhost \
+            -e POSTGRES_PORT=5432 \
+            -e POSTGRES_USERNAME=list_am_bot \
+            -e POSTGRES_PASSWORD=password \
+            -e POSTGRES_NAME=list_am_bot_test \
+            -e BOT_TOKEN=test_token \
+            -e NODE_ENV=test \
+            ${{ needs.build.outputs.base-image }} \
+            sh -c 'npm test'
+
+  deploy:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment:
+      name: production
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        uses: appleboy/ssh-action@v1.0.0
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          CONFIG: ${{ secrets.CONFIG }}
+        with:
+          host: ${{ vars.DEPLOY_HOST }}
+          username: ${{ vars.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          envs: REGISTRY,IMAGE_NAME,GITHUB_TOKEN,GITHUB_ACTOR,CONFIG
+          script: |
+            set -e
+
+            # Create project directory
+            mkdir -p ${{ vars.PROJECT_DIR }}
+            cd ${{ vars.PROJECT_DIR }}
+
+            # Create .env file from CONFIG variable
+            echo "${CONFIG}" > .env
+
+            # Download docker-compose
+            curl -o docker-compose.yml https://raw.githubusercontent.com/${{ github.repository }}/${{ github.ref_name }}/docker-compose.prod.yml
+
+            # Replace image placeholders
+            sed -i "s#app_image#${REGISTRY}/${IMAGE_NAME}/app:main#g" docker-compose.yml
+
+            # Login to registry
+            echo "${GITHUB_TOKEN}" | docker login ${REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
+
+            # Pull and restart
+            docker compose pull
+            docker compose up -d
+
+            # Cleanup
+            docker logout ${REGISTRY}
+            rm -f .env docker-compose.yml
+
+            echo "✅ Production deployment completed"
+
+      - name: Create deployment notification
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.repos.createCommitComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha,
+              body: '🚀 Successfully deployed to production!'
+            })

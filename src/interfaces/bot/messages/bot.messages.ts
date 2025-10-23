@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 
+import { escapeHtml } from '@list-am-bot/common/utils/html.util';
+
 @Injectable()
 export class BotMessages {
   welcome(): string {
@@ -20,7 +22,7 @@ export class BotMessages {
       '/status - Показать текущий статус\n' +
       '/help - Показать эту справку\n\n' +
       '<b>Как использовать:</b>\n' +
-      '1. Добавьте поисковый запрос (например, "Chevrolet Blazer")\n' +
+      '1. Добавьте поисковый запрос (например, "Chevrolet Tahoe")\n' +
       '2. Бот будет проверять list.am каждый час\n' +
       '3. Вы получите уведомление о каждом новом объявлении\n\n' +
       'Вы можете приостановить рассылку в любое время через меню.'
@@ -44,7 +46,7 @@ export class BotMessages {
   enterQuery(): string {
     return (
       '✍️ Пришлите текст для поиска на list.am\n\n' +
-      'Например: <code>Chevrolet Blazer</code>\n\n' +
+      'Например: <code>Chevrolet Tahoe</code>\n\n' +
       'Нажмите "Отмена" для возврата в меню.'
     );
   }
@@ -100,7 +102,7 @@ export class BotMessages {
     return (
       '❌ Неверный формат команды.\n\n' +
       'Использование: <code>/last поисковый запрос</code>\n\n' +
-      'Например: <code>/last Chevrolet Blazer</code>'
+      'Например: <code>/last Chevrolet Tahoe</code>'
     );
   }
 
@@ -113,14 +115,6 @@ export class BotMessages {
   }
 
   lastCommandResult(query: string, count: number): string {
-    return `🔍 <b>Результаты поиска</b> по запросу: "${this.escapeHtml(query)}"\n\nНайдено: ${count} объявлений\n\nПоказываю последнее:`;
-  }
-
-  private escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return `🔍 <b>Результаты поиска</b> по запросу: "${escapeHtml(query)}"\n\nНайдено: ${count} объявлений\n\nПоказываю последнее:`;
   }
 }
