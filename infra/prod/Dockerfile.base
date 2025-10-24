@@ -10,6 +10,9 @@ COPY ./tsconfig.json .
 COPY ./tsconfig.build.json .
 
 COPY ./nest-cli.json .
+COPY ./webpack.config.js .
+COPY ./jest.config.js .
+COPY ./jest.setup.js .
 
 COPY ./src ./src
 
