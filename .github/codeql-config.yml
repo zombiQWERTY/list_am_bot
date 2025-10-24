@@ -2,9 +2,9 @@ name: 'CodeQL Config'
 
 # Paths to ignore during analysis
 paths-ignore:
-  - node_modules/**
-  - dist/**
-  - coverage/**
+  - 'node_modules/**'
+  - 'dist/**'
+  - 'coverage/**'
   - '**/*.spec.ts'
   - '**/*.test.ts'
   - '**/__tests__/**'
@@ -19,9 +19,3 @@ query-filters:
       problem.severity: recommendation
   - exclude:
       problem.severity: note
-
-# Limit path-problem queries to reduce SARIF file size
-# This helps prevent the "too many threadflow steps" error
-paths:
-  max-paths: 4
-  max-depth: 4
