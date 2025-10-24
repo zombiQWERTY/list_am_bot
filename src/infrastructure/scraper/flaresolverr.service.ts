@@ -40,7 +40,6 @@ export class FlaresolvrrService {
   private readonly baseUrl: string;
   private readonly maxTimeout: number;
   private readonly maxRetries = 3;
-  private readonly enableFallback: boolean;
 
   private isAvailable = true;
   private lastHealthCheck = 0;
@@ -87,21 +86,11 @@ export class FlaresolvrrService {
         );
         this.isAvailable = false;
 
-        if (this.enableFallback) {
-          this.logger.debug('Attempting fallback to direct fetch...');
-          return await this.fetchDirect(url);
-        }
-
         throw error;
       }
     }
 
-    if (this.enableFallback) {
-      this.logger.warn('FlareSolverr unavailable, using direct fetch fallback');
-      return await this.fetchDirect(url);
-    }
-
-    throw new Error('FlareSolverr is unavailable and fallback is disabled');
+    throw new Error('FlareSolverr is unavailable');
   }
 
   private async fetchWithRetry(
@@ -177,34 +166,6 @@ export class FlaresolvrrService {
       }
 
       this.logger.error('Unexpected FlareSolverr error:', error);
-      throw error;
-    }
-  }
-
-  private async fetchDirect(url: string): Promise<string> {
-    try {
-      this.logger.debug(`Fetching URL directly (fallback): ${url}`);
-
-      await this.rateLimiter.acquire();
-
-      const startTime = Date.now();
-
-      const response = await this.directClient.get<string>(url);
-      const duration = Date.now() - startTime;
-
-      this.logger.debug(
-        `✅ Direct fetch success (${duration}ms): Status ${response.status}, HTML size: ${String(response.data).length} bytes`,
-      );
-
-      return String(response.data);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        const errorMsg = error.message;
-        this.logger.error(`Direct fetch failed: ${errorMsg}`, error.stack);
-        throw new Error(`Direct fetch failed: ${errorMsg}`);
-      }
-
-      this.logger.error('Unexpected direct fetch error:', error);
       throw error;
     }
   }

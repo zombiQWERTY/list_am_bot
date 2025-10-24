@@ -29,7 +29,7 @@ async function bootstrap(): Promise<void> {
 
   if (process.env.NODE_ENV === 'production') {
     const bot = app.get<Telegraf<BotContext>>(getBotToken(LIST_AM_BOT));
-    app.use(bot.webhookCallback('/api/webhook'));
+    app.use(bot.webhookCallback(process.env.BOT_WEBHOOK_URL));
   }
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));

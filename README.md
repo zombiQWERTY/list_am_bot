@@ -284,9 +284,6 @@ The scraping system includes multiple layers of resilience:
 **Configuration:**
 
 ```env
-# Enable fallback to direct fetch if FlareSolverr fails
-FLARESOLVERR_ENABLE_FALLBACK=true
-
 # FlareSolverr connection settings
 FLARESOLVERR_URL=http://list_am_bot.flaresolverr:8191
 FLARESOLVERR_PORT=8191
