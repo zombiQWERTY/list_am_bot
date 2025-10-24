@@ -278,7 +278,9 @@ describe('SubscriptionService', (): void => {
     it('should delete all subscriptions for correct userId', async (): Promise<void> => {
       await service.deleteAll(456);
 
-      expect(subscriptionRepository.deleteAllByUserId).toHaveBeenCalledWith(456);
+      expect(subscriptionRepository.deleteAllByUserId).toHaveBeenCalledWith(
+        456,
+      );
     });
   });
 
