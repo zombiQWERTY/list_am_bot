@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 
 RUN npm prune --production
 
-FROM node:20-alpine AS run
+FROM node:25-alpine AS run
 
 WORKDIR /usr/src/app
 
