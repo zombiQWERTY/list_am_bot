@@ -254,6 +254,9 @@ sudo usermod -aG docker deploy
 sudo mkdir -p /opt/list_am_bot
 sudo chown deploy:deploy /opt/list_am_bot
 
+# Create Docker network (for external network in docker-compose)
+docker network create listambot_network
+
 # Setup SSH key
 sudo -u deploy mkdir -p /home/deploy/.ssh
 sudo -u deploy nano /home/deploy/.ssh/authorized_keys
@@ -261,6 +264,8 @@ sudo -u deploy nano /home/deploy/.ssh/authorized_keys
 sudo chmod 700 /home/deploy/.ssh
 sudo chmod 600 /home/deploy/.ssh/authorized_keys
 ```
+
+> **Note:** The Docker network `listambot_network` is automatically created during deployment. Manual creation is only needed for first-time setup or if you deleted the network.
 
 ### Deployment Flow
 
