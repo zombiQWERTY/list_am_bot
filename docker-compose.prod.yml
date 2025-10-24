@@ -31,6 +31,20 @@ services:
     networks:
       - listambot_network
 
+  list_am_bot.npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    container_name: list_am_bot.npm
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '81:81'
+      - '443:443'
+    volumes:
+      - './npm/data:/data'
+      - './npm/letsencrypt:/etc/letsencrypt'
+    networks:
+      - listambot_network
+
   list_am_bot.core:
     image: app_image
     container_name: list_am_bot.core
