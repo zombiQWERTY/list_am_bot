@@ -16,6 +16,7 @@ module.exports = {
   },
   coverageDirectory: './coverage',
   testEnvironment: 'node',
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   roots: ['<rootDir>/src/'],
   coveragePathIgnorePatterns: [
     'node_modules',
