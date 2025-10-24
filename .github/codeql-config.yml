@@ -1,5 +1,10 @@
 name: 'CodeQL Config'
 
+# Paths to analyze - explicit include
+paths:
+  - 'src/**'
+  - '.github/workflows/**'
+
 # Paths to ignore during analysis
 paths-ignore:
   - 'node_modules/**'
@@ -8,14 +13,15 @@ paths-ignore:
   - '**/*.spec.ts'
   - '**/*.test.ts'
   - '**/__tests__/**'
+  - 'logs/**'
+  - 'examples/**'
 
-# Query configuration
+# Query configuration - include all security queries
 queries:
+  - uses: security-extended
   - uses: security-and-quality
 
-# Filter out lower severity findings to reduce result size
+# Only exclude notes (keep recommendations, warnings, errors)
 query-filters:
-  - exclude:
-      problem.severity: recommendation
   - exclude:
       problem.severity: note
