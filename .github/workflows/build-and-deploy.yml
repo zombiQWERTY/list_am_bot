@@ -8,7 +8,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
   build:
@@ -21,6 +20,10 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Set lowercase image name
+        id: image-name
+        run: echo "value=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -36,7 +39,7 @@ jobs:
         id: meta-base
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base
+          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/base
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -51,7 +54,7 @@ jobs:
           push: true
           tags: ${{ steps.meta-base.outputs.tags }}
           labels: ${{ steps.meta-base.outputs.labels }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/base:latest
           cache-to: type=inline
           # Example: Pass build-time variables if needed
           # build-args: |
@@ -62,7 +65,7 @@ jobs:
         id: meta-app
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app
+          images: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/app
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -78,18 +81,17 @@ jobs:
           tags: ${{ steps.meta-app.outputs.tags }}
           labels: ${{ steps.meta-app.outputs.labels }}
           build-args: |
-            BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
+            BASE_IMAGE=${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/base:${{ github.ref_name }}
           # Example: Add more build args from variables/secrets
           # build-args: |
-          #   BASE_IMAGE=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
           #   NODE_ENV=${{ vars.NODE_ENV }}
           #   APP_VERSION=${{ github.sha }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:latest
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/app:latest
           cache-to: type=inline
 
     outputs:
-      base-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/base:${{ github.ref_name }}
-      app-image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/app:${{ github.ref_name }}
+      base-image: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/base:${{ github.ref_name }}
+      app-image: ${{ env.REGISTRY }}/${{ steps.image-name.outputs.value }}/app:${{ github.ref_name }}
 
   test:
     name: Run Tests
@@ -151,11 +153,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Set lowercase image name for deploy
+        id: deploy-image-name
+        run: echo "value=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Deploy to production server
         uses: appleboy/ssh-action@v1.0.0
         env:
           REGISTRY: ${{ env.REGISTRY }}
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_NAME: ${{ steps.deploy-image-name.outputs.value }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_ACTOR: ${{ github.actor }}
           CONFIG: ${{ secrets.CONFIG }}
