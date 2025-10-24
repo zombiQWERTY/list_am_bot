@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 const botConfigSchema = z.object({
   botToken: z.string().min(1, 'BOT_TOKEN is required'),
-  botIncidentsUserId: z.number().optional(),
+  botIncidentsUserId: z.number(),
   botEnvironment: z.string().default('local'),
   botDomain: z.string().optional(),
   botWebhookUrl: z.string().optional(),

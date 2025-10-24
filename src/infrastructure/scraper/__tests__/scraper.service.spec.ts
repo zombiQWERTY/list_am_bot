@@ -30,7 +30,10 @@ describe('ScraperService', (): void => {
     seenListingRepository = mockDeep<ISeenListingRepository>();
     metricsService = mockDeep<MetricsService>();
 
-    configService.get.mockReturnValue('https://www.list.am');
+    configService.get.mockImplementation((key: string): unknown => {
+      if (key === 'app.listAmBaseUrl') return 'https://www.list.am';
+      return undefined;
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

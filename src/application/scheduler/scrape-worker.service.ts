@@ -1,5 +1,4 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { NotificationService } from '@list-am-bot/application/notification/notification.service';
@@ -16,22 +15,16 @@ import { ScraperService } from '@list-am-bot/infrastructure/scraper/scraper.serv
 @Injectable()
 export class ScrapeWorkerService {
   private readonly logger = new Logger(ScrapeWorkerService.name);
-  private readonly requestDelayMs: number;
+  private readonly requestDelayMs = 10;
 
   constructor(
     private readonly userService: UserService,
     private readonly subscriptionService: SubscriptionService,
     private readonly scraperService: ScraperService,
     private readonly notificationService: NotificationService,
-    private readonly configService: ConfigService,
     private readonly scrapeQueue: ScrapeQueueService,
     private readonly metricsService: MetricsService,
-  ) {
-    this.requestDelayMs = this.configService.get<number>(
-      'requestDelayMs',
-      2500,
-    );
-  }
+  ) {}
 
   async initializeSubscription(
     subscriptionId: number,

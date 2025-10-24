@@ -59,8 +59,9 @@ describe('SeenListingRepository', (): void => {
 
       repo.createQueryBuilder.mockReturnValue(mockQueryBuilder as never);
       repo.create.mockImplementation(
-        (data: Partial<SeenListingEntityDto>): SeenListingEntityDto =>
-          data as SeenListingEntityDto,
+        <T extends SeenListingEntityDto | SeenListingEntityDto[]>(
+          data?: T,
+        ): T => data,
       );
     });
 

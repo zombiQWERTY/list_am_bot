@@ -20,7 +20,7 @@ describe('FlaresolvrrService', (): void => {
     mockAxiosInstance = mockDeep<AxiosInstance>();
 
     configService.get.mockImplementation(
-      (key: string, defaultValue?: string): string => {
+      (key: string, defaultValue?: unknown): unknown => {
         if (key === 'FLARESOLVERR_URL') {
           return 'http://localhost:8191';
         }

@@ -24,10 +24,7 @@ export class ScraperService {
     @Inject(SeenListingRepositoryPort)
     private readonly seenListingRepository: ISeenListingRepository,
   ) {
-    this.baseUrl = this.configService.get<string>(
-      'listAmBaseUrl',
-      'https://www.list.am',
-    );
+    this.baseUrl = this.configService.get<string>('app.listAmBaseUrl');
   }
 
   async scrapeQuery(query: string, retryOnEmpty = true): Promise<ScrapeResult> {
