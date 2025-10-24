@@ -1,7 +1,7 @@
-name: list_am_bot
+name: listambot
 services:
-  list_am_bot.postgres:
-    container_name: list_am_bot.postgres
+  listambot.postgres:
+    container_name: listambot.postgres
     env_file: .env
     profiles: [system]
     environment:
@@ -28,9 +28,9 @@ services:
     ports:
       - ${POSTGRES_PORT}:5432
 
-  list_am_bot.flaresolverr:
+  listambot.flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: list_am_bot.flaresolverr
+    container_name: listambot.flaresolverr
     profiles: [system]
     env_file: .env
     environment:
@@ -44,11 +44,11 @@ services:
       - ./.docker/flaresolver:/config
     restart: unless-stopped
 
-  list_am_bot.core:
-    image: list_am_bot-dev:latest
+  listambot.core:
+    image: listambot-dev:latest
     entrypoint: /tmp/entrypoint.sh
     profiles: [node]
-    container_name: list_am_bot.core
+    container_name: listambot.core
     env_file:
       - ./.env
     restart: always

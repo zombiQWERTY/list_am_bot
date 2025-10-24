@@ -1,7 +1,7 @@
-name: list_am_bot
+name: listambot
 services:
-  list_am_bot.postgres:
-    container_name: list_am_bot.postgres
+  listambot.postgres:
+    container_name: listambot.postgres
     environment:
       - POSTGRES_DB=${POSTGRES_NAME}
       - POSTGRES_USER=${POSTGRES_USERNAME}
@@ -31,9 +31,9 @@ services:
     networks:
       - listambot_network
 
-  list_am_bot.npm:
+  listambot.npm:
     image: 'jc21/nginx-proxy-manager:latest'
-    container_name: list_am_bot.npm
+    container_name: listambot.npm
     restart: unless-stopped
     ports:
       - '80:80'
@@ -45,9 +45,9 @@ services:
     networks:
       - listambot_network
 
-  list_am_bot.flaresolverr:
+  listambot.flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
-    container_name: list_am_bot.flaresolverr
+    container_name: listambot.flaresolverr
     env_file: .env
     environment:
       - LOG_FILE=${LOG_FILE:-none}
@@ -60,15 +60,15 @@ services:
       - ./flaresolver:/config
     restart: unless-stopped
 
-  list_am_bot.core:
+  listambot.core:
     image: app_image
-    container_name: list_am_bot.core
+    container_name: listambot.core
     entrypoint: /tmp/entrypoint.sh core
     env_file:
       - ./.env
     restart: unless-stopped
     depends_on:
-      - list_am_bot.postgres
+      - listambot.postgres
     stdin_open: true
     tty: true
     networks:

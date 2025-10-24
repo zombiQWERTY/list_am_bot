@@ -271,12 +271,7 @@ The scraping system includes multiple layers of resilience:
    - Increasing delays: 1s → 2s → 4s (max 5s)
    - Prevents overwhelming failed services
 
-3. **Automatic Fallback**
-   - If FlareSolverr is unavailable, falls back to direct HTTP requests
-   - Configurable via `FLARESOLVERR_ENABLE_FALLBACK=true`
-   - Ensures scraping continues even if FlareSolverr fails
-
-4. **Graceful Degradation**
+3. **Graceful Degradation**
    - Logs failures without stopping the bot
    - Continues with available functionality
    - Admin receives error notifications
