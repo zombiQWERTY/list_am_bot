@@ -15,7 +15,7 @@ ENV TZ=Asia/Yerevan
 
 COPY --from=build /usr/src/app/node_modules /usr/src/app/node_modules
 COPY --from=build /usr/src/app/dist /usr/src/app/dist
-COPY --from=build /usr/src/app/apps /usr/src/app/apps
+COPY --from=build /usr/src/app /usr/src/app
 
 COPY ./infra/prod/entrypoint.sh /tmp/entrypoint.sh
 
