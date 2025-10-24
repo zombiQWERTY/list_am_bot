@@ -5,11 +5,16 @@ import { ValidationPipe, ClassSerializerInterceptor } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { config as dotEnvConfig } from 'dotenv';
 import { expand as dotEnvExpand } from 'dotenv-expand';
+import { getBotToken } from 'nestjs-telegraf';
 import { install as sourceMapInstall } from 'source-map-support';
+import { Telegraf } from 'telegraf';
 
 import { AppModule } from '@list-am-bot/app.module';
 import { GlobalExceptionsFilter } from '@list-am-bot/common/filters/globalExceptions.filter';
 import { makeLogger } from '@list-am-bot/common/utils/winstonLogger';
+
+import { LIST_AM_BOT } from './constants';
+import { BotContext } from './context/context.interface';
 
 sourceMapInstall();
 
@@ -21,6 +26,11 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, {
     logger,
   });
+
+  if (process.env.NODE_ENV === 'production') {
+    const bot = app.get<Telegraf<BotContext>>(getBotToken(LIST_AM_BOT));
+    app.use(bot.webhookCallback('/api/webhook'));
+  }
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
 
