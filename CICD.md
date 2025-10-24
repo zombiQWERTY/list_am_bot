@@ -95,11 +95,12 @@ Go to **Secrets** tab and add:
 
 Go to **Variables** tab and add:
 
-| Variable Name | Description                    | Example            |
-| ------------- | ------------------------------ | ------------------ |
-| `DEPLOY_HOST` | Production server hostname/IP  | `your-server.com`  |
-| `DEPLOY_USER` | SSH username                   | `deploy`           |
-| `PROJECT_DIR` | Deployment directory on server | `/opt/list_am_bot` |
+| Variable Name | Description                     | Example            |
+| ------------- | ------------------------------- | ------------------ |
+| `DEPLOY_HOST` | Production server hostname/IP   | `your-server.com`  |
+| `DEPLOY_USER` | SSH username                    | `deploy`           |
+| `DEPLOY_PORT` | SSH port (optional, default 22) | `2221`             |
+| `PROJECT_DIR` | Deployment directory on server  | `/opt/list_am_bot` |
 
 #### 3. CONFIG Secret Format
 
@@ -133,6 +134,12 @@ POSTGRES_TELEGRAF_SCHEMA=public
 
    ```bash
    ssh-keygen -t ed25519 -C "github-actions-deploy" -f deploy_key
+
+   # Copy public key to server
+   # If using custom SSH port:
+   ssh-copy-id -i deploy_key.pub -p 2221 deploy@your-server.com
+
+   # Or default port 22:
    ssh-copy-id -i deploy_key.pub deploy@your-server.com
    ```
 
@@ -152,6 +159,7 @@ POSTGRES_TELEGRAF_SCHEMA=public
 4. **Add deployment variables:**
    - Go to **Variables → New repository variable**
    - Add `DEPLOY_HOST`, `DEPLOY_USER`, `PROJECT_DIR`
+   - Add `DEPLOY_PORT` (if using custom SSH port, e.g., `2221`; omit for default port 22)
 
 ---
 
@@ -273,8 +281,10 @@ git push origin main
 If you need to deploy manually:
 
 ```bash
-# SSH to server
-ssh deploy@your-server
+# SSH to server (with custom port if needed)
+ssh -p 2221 deploy@your-server
+# Or default port:
+# ssh deploy@your-server
 
 # Navigate to project directory
 cd /opt/list_am_bot
@@ -306,7 +316,7 @@ docker compose logs -f
 
 ```bash
 # SSH to server
-ssh deploy@your-server
+ssh -p 2221 deploy@your-server
 
 # Check running containers
 docker ps
