@@ -289,6 +289,9 @@ ssh -p 2221 deploy@your-server
 # Navigate to project directory
 cd /opt/list_am_bot
 
+# Create Docker network if it doesn't exist
+docker network create listambot_network || true
+
 # Login to registry
 echo $GITHUB_TOKEN | docker login ghcr.io -u $GITHUB_USER --password-stdin
 

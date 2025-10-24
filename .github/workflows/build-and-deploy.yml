@@ -190,6 +190,9 @@ jobs:
             # Replace image placeholders
             sed -i "s#app_image#${REGISTRY}/${IMAGE_NAME}/app:main#g" docker-compose.yml
 
+            # Create Docker network if it doesn't exist
+            docker network create listambot_network || true
+
             # Login to registry
             echo "${GITHUB_TOKEN}" | docker login ${REGISTRY} -u ${GITHUB_ACTOR} --password-stdin
 

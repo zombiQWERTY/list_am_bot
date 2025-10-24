@@ -20,7 +20,7 @@
 
 [Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Development](#-development) • [Support](#-support-the-project)
 
-📚 **Documentation:** [Quick Start](QUICK_START.md) • [Development Guide](DEVELOPMENT.md) • [CI/CD Setup](CICD.md) • [Contributing](CONTRIBUTING.md) • [Changelog](CHANGELOG.md)
+📚 **Documentation:** [Quick Start](QUICK_START.md) • [Development Guide](DEVELOPMENT.md) • [CI/CD Setup](CICD.md) • [Contributing](CONTRIBUTING.md) • [Code of Conduct](CODE_OF_CONDUCT.md) • [Security Policy](SECURITY.md) • [Changelog](CHANGELOG.md)
 
 </div>
 
@@ -812,7 +812,9 @@ docker exec -it list_am_bot.core /tmp/typeorm-migrate.sh
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these steps:
+Contributions are welcome! Please read our [Contributing Guidelines](CONTRIBUTING.md) and [Code of Conduct](CODE_OF_CONDUCT.md) before getting started.
+
+### Quick Start for Contributors
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -827,6 +829,10 @@ Contributions are welcome! Please follow these steps:
 - Add tests for new features
 - Update documentation as needed
 - Run linter before committing
+
+### Security
+
+Found a security vulnerability? Please report it responsibly. See our [Security Policy](SECURITY.md) for details.
 
 ---
 
