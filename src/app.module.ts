@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 
@@ -10,7 +10,10 @@ import {
   botConfig,
   BotSchemaType,
 } from '@list-am-bot/common/config/bot.config';
-import { postgresConfig } from '@list-am-bot/common/config/database.config';
+import {
+  DatabaseSchemaType,
+  postgresConfig,
+} from '@list-am-bot/common/config/database.config';
 import scraperConfig from '@list-am-bot/common/config/scraper.config';
 import { getSessionMiddleware } from '@list-am-bot/common/middleware/session.middleware';
 import { LIST_AM_BOT } from '@list-am-bot/constants';
@@ -28,42 +31,27 @@ import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
     }),
     TelegrafModule.forRootAsync({
       botName: LIST_AM_BOT,
-      inject: [botConfig.KEY, appConfig.KEY],
+      inject: [botConfig.KEY, appConfig.KEY, postgresConfig.KEY],
       useFactory: (
         botCfg: BotSchemaType,
         appCfg: AppSchemaType,
-      ): TelegrafModuleOptions => {
-        const logger = new Logger('TelegrafModule');
-        const webhookPath = botCfg.botWebhookUrl || '/api/webhook';
-        const isProduction = appCfg.node_env === 'production';
-        const hasWebhook = isProduction && botCfg.botDomain;
-
-        logger.log(`🤖 Bot configuration:`);
-        logger.log(`  - Environment: ${appCfg.node_env}`);
-        logger.log(`  - Mode: ${hasWebhook ? 'WEBHOOK' : 'POLLING'}`);
-
-        if (hasWebhook) {
-          logger.log(`  - Domain: ${botCfg.botDomain}`);
-          logger.log(`  - Webhook path: ${webhookPath}`);
-          logger.log(`  - Full webhook URL: ${botCfg.botDomain}${webhookPath}`);
-        }
-
-        return {
-          token: botCfg.botToken,
-          middlewares: [getSessionMiddleware()],
-          include: [BotModule],
-          launchOptions: {
-            allowedUpdates: ['message', 'callback_query'],
-            dropPendingUpdates: true,
-            webhook: hasWebhook
+        dbConfig: DatabaseSchemaType,
+      ): TelegrafModuleOptions => ({
+        token: botCfg.botToken,
+        middlewares: [getSessionMiddleware(dbConfig)],
+        include: [BotModule],
+        launchOptions: {
+          allowedUpdates: ['message', 'callback_query'],
+          dropPendingUpdates: true,
+          webhook:
+            appCfg.node_env === 'production' && botCfg.botDomain
               ? {
                   domain: botCfg.botDomain,
-                  path: webhookPath,
+                  path: botCfg.botWebhookUrl || '/telegram-webhook',
                 }
               : undefined,
-          },
-        };
-      },
+        },
+      }),
     }),
     TypeOrmDatabaseModule,
     BotModule,

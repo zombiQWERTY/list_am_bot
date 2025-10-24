@@ -121,6 +121,8 @@ export class GlobalExceptionsFilter implements ExceptionFilter {
     const messageStr =
       typeof message === 'string' ? message : JSON.stringify(message);
 
+    this.logger.error(exception);
+
     const logData: Record<string, unknown> = {
       message: `Exception thrown: ${messageStr}`,
       statusCode: status,

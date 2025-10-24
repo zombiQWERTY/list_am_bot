@@ -2,10 +2,11 @@ import { Logger } from '@nestjs/common';
 import { Postgres } from '@telegraf/session/pg';
 import { Context, MiddlewareFn, session, SessionStore } from 'telegraf';
 
-import { getDbConfig } from '@list-am-bot/common/config/database.config';
+import { DatabaseSchemaType } from '@list-am-bot/common/config/database.config';
 
-export const getSessionMiddleware = (): MiddlewareFn<Context> => {
-  const dbConfig = getDbConfig();
+export const getSessionMiddleware = (
+  dbConfig: DatabaseSchemaType,
+): MiddlewareFn<Context> => {
   const logger = new Logger('SessionMiddleware');
 
   const store = Postgres({
