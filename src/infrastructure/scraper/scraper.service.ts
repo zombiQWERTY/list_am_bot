@@ -1,5 +1,4 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { ScraperException } from '@list-am-bot/common/exceptions/bot.exceptions';
@@ -19,12 +18,11 @@ export class ScraperService {
   constructor(
     private readonly flaresolvrrService: FlaresolvrrService,
     private readonly parser: ParserService,
-    private readonly configService: ConfigService,
     private readonly metricsService: MetricsService,
     @Inject(SeenListingRepositoryPort)
     private readonly seenListingRepository: ISeenListingRepository,
   ) {
-    this.baseUrl = this.configService.get<string>('app.listAmBaseUrl');
+    this.baseUrl = 'https://www.list.am';
   }
 
   async scrapeQuery(query: string, retryOnEmpty = true): Promise<ScrapeResult> {

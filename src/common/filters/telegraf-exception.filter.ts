@@ -41,7 +41,7 @@ export class TelegrafExceptionFilter implements ExceptionFilter {
     try {
       if (ctx.chat) {
         await ctx.reply(
-          '❌ Произошла непредвиденная ошибка. Попробуйте позже или обратитесь в поддержку.',
+          '❌ Произошла непредвиденная ошибка. Попробуйте позже или обратитесь в поддержку (@zinovev_space).',
         );
       }
     } catch (replyError) {

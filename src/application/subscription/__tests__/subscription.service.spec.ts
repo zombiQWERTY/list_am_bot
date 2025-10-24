@@ -11,7 +11,10 @@ import {
   SubscriptionRepositoryPort,
   ISubscriptionRepository,
 } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 
 const mockDate = new Date('2024-10-23T10:00:00.000Z');
 
@@ -51,6 +54,7 @@ describe('SubscriptionService', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -66,6 +70,7 @@ describe('SubscriptionService', (): void => {
       expect(subscriptionRepository.exists).toHaveBeenCalledWith(
         1,
         'test query',
+        SubscriptionType.QUERY,
       );
     });
 
@@ -75,16 +80,18 @@ describe('SubscriptionService', (): void => {
       expect(subscriptionRepository.exists).toHaveBeenCalledWith(
         1,
         'test query',
+        SubscriptionType.QUERY,
       );
     });
 
     it('should create subscription with trimmed query', async (): Promise<void> => {
       await service.create(1, '  test query  ');
 
-      expect(subscriptionRepository.create).toHaveBeenCalledWith(
-        1,
-        'test query',
-      );
+      expect(subscriptionRepository.create).toHaveBeenCalledWith({
+        userId: 1,
+        query: 'test query',
+        type: SubscriptionType.QUERY,
+      });
     });
 
     it('should return created subscription', async (): Promise<void> => {
@@ -159,6 +166,7 @@ describe('SubscriptionService', (): void => {
           id: 1,
           userId: 1,
           query: 'query 1',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -167,6 +175,7 @@ describe('SubscriptionService', (): void => {
           id: 2,
           userId: 1,
           query: 'query 2',
+          type: SubscriptionType.QUERY,
           isActive: false,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -206,6 +215,7 @@ describe('SubscriptionService', (): void => {
           id: 1,
           userId: 1,
           query: 'active query 1',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -214,6 +224,7 @@ describe('SubscriptionService', (): void => {
           id: 2,
           userId: 1,
           query: 'active query 2',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,

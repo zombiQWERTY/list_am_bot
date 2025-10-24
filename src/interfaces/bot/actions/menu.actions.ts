@@ -8,6 +8,7 @@ import { BotContext } from '@list-am-bot/context/context.interface';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 import { ADD_SUBSCRIPTION_SCENE } from '@list-am-bot/interfaces/bot/scenes/add-subscription.scene';
+import { ADD_URL_SUBSCRIPTION_SCENE } from '@list-am-bot/interfaces/bot/scenes/add-url-subscription.scene';
 
 @Update()
 @Injectable()
@@ -59,6 +60,12 @@ export class MenuActions {
   async addSubscription(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
     await ctx.scene.enter(ADD_SUBSCRIPTION_SCENE);
+  }
+
+  @Action('menu:add_url')
+  async addUrlSubscription(@Ctx() ctx: BotContext): Promise<void> {
+    await ctx.answerCbQuery();
+    await ctx.scene.enter(ADD_URL_SUBSCRIPTION_SCENE);
   }
 
   @Action('menu:clear')

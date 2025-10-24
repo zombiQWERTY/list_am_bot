@@ -5,14 +5,18 @@ import {
   ReplyKeyboardMarkup,
 } from 'telegraf/types';
 
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 
 @Injectable()
 export class BotKeyboards {
   mainMenu(isPaused = false): InlineKeyboardMarkup {
     const buttons: InlineKeyboardButton[][] = [
       [{ text: '📋 Список отслеживаемых', callback_data: 'menu:list' }],
-      [{ text: '➕ Добавить в список', callback_data: 'menu:add' }],
+      [{ text: '➕ Добавить текстом', callback_data: 'menu:add' }],
+      [{ text: '🔗 Добавить по URL', callback_data: 'menu:add_url' }],
       [{ text: '🗑 Очистить список', callback_data: 'menu:clear' }],
     ];
 
@@ -31,16 +35,26 @@ export class BotKeyboards {
 
   subscriptionList(subscriptions: SubscriptionEntity[]): InlineKeyboardMarkup {
     const buttons: InlineKeyboardButton[][] = subscriptions.map(
-      (sub, index): InlineKeyboardButton[] => [
-        {
-          text: `${index + 1}. ${sub.query.substring(0, 40)}${sub.query.length > 40 ? '...' : ''}`,
-          callback_data: `sub:${sub.id}`,
-        },
-        {
-          text: '🗑',
-          callback_data: `delete:${sub.id}`,
-        },
-      ],
+      (sub, index): InlineKeyboardButton[] => {
+        let displayText: string;
+
+        if (sub.type === SubscriptionType.URL && sub.name) {
+          displayText = `${index + 1}. 🔗 ${sub.name.substring(0, 35)}${sub.name.length > 35 ? '...' : ''}`;
+        } else {
+          displayText = `${index + 1}. ${sub.query.substring(0, 40)}${sub.query.length > 40 ? '...' : ''}`;
+        }
+
+        return [
+          {
+            text: displayText,
+            callback_data: `sub:${sub.id}`,
+          },
+          {
+            text: '🗑',
+            callback_data: `delete:${sub.id}`,
+          },
+        ];
+      },
     );
 
     buttons.push([{ text: '« Назад в меню', callback_data: 'menu:back' }]);

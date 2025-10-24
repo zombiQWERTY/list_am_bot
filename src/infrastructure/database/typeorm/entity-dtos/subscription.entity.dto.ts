@@ -9,7 +9,10 @@ import {
   Index,
 } from 'typeorm';
 
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { SeenListingEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/seen-listing.entity.dto';
 import { UserEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/user.entity.dto';
 
@@ -25,6 +28,16 @@ export class SubscriptionEntityDto implements SubscriptionEntity {
 
   @Column({ type: 'varchar', length: 500 })
   query: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  name?: string;
+
+  @Column({
+    type: 'varchar',
+    length: 10,
+    default: SubscriptionType.QUERY,
+  })
+  type: SubscriptionType;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

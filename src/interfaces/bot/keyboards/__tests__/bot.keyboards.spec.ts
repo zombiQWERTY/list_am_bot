@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 
 const mockDate = new Date('2024-10-23T10:00:00.000Z');
@@ -33,28 +36,34 @@ describe('BotKeyboards', (): void => {
       expect(result.inline_keyboard[0][0].text).toContain('Список');
     });
 
-    it('should include add button', (): void => {
+    it('should include add text button', (): void => {
       const result = service.mainMenu();
 
-      expect(result.inline_keyboard[1][0].text).toContain('Добавить');
+      expect(result.inline_keyboard[1][0].text).toContain('текстом');
+    });
+
+    it('should include add URL button', (): void => {
+      const result = service.mainMenu();
+
+      expect(result.inline_keyboard[2][0].text).toContain('URL');
     });
 
     it('should include clear button', (): void => {
       const result = service.mainMenu();
 
-      expect(result.inline_keyboard[2][0].text).toContain('Очистить');
+      expect(result.inline_keyboard[3][0].text).toContain('Очистить');
     });
 
     it('should show pause button when not paused', (): void => {
       const result = service.mainMenu(false);
 
-      expect(result.inline_keyboard[3][0].text).toContain('Остановить');
+      expect(result.inline_keyboard[4][0].text).toContain('Остановить');
     });
 
     it('should show resume button when paused', (): void => {
       const result = service.mainMenu(true);
 
-      expect(result.inline_keyboard[3][0].text).toContain('Начать');
+      expect(result.inline_keyboard[4][0].text).toContain('Начать');
     });
 
     it('should have correct callback data for list button', (): void => {
@@ -66,7 +75,7 @@ describe('BotKeyboards', (): void => {
       );
     });
 
-    it('should have correct callback data for add button', (): void => {
+    it('should have correct callback data for add text button', (): void => {
       const result = service.mainMenu();
 
       expect(result.inline_keyboard[1][0]).toHaveProperty(
@@ -75,10 +84,19 @@ describe('BotKeyboards', (): void => {
       );
     });
 
-    it('should have correct callback data for clear button', (): void => {
+    it('should have correct callback data for add URL button', (): void => {
       const result = service.mainMenu();
 
       expect(result.inline_keyboard[2][0]).toHaveProperty(
+        'callback_data',
+        'menu:add_url',
+      );
+    });
+
+    it('should have correct callback data for clear button', (): void => {
+      const result = service.mainMenu();
+
+      expect(result.inline_keyboard[3][0]).toHaveProperty(
         'callback_data',
         'menu:clear',
       );
@@ -87,7 +105,7 @@ describe('BotKeyboards', (): void => {
     it('should have pause callback when not paused', (): void => {
       const result = service.mainMenu(false);
 
-      expect(result.inline_keyboard[3][0]).toHaveProperty(
+      expect(result.inline_keyboard[4][0]).toHaveProperty(
         'callback_data',
         'menu:pause',
       );
@@ -96,7 +114,7 @@ describe('BotKeyboards', (): void => {
     it('should have resume callback when paused', (): void => {
       const result = service.mainMenu(true);
 
-      expect(result.inline_keyboard[3][0]).toHaveProperty(
+      expect(result.inline_keyboard[4][0]).toHaveProperty(
         'callback_data',
         'menu:resume',
       );
@@ -112,6 +130,7 @@ describe('BotKeyboards', (): void => {
           id: 1,
           userId: 1,
           query: 'Test Query 1',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -120,6 +139,7 @@ describe('BotKeyboards', (): void => {
           id: 2,
           userId: 1,
           query: 'Test Query 2',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,

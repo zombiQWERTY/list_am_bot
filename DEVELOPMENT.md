@@ -486,13 +486,7 @@ To receive reports, set `BOT_INCIDENTS_USER_ID` in `.env` file.
 
 - `BOT_TOKEN` — Telegram bot token from BotFather
 - `POSTGRES_BASE_URL` — Full PostgreSQL connection string
-
-### Optional
-
 - `BOT_INCIDENTS_USER_ID` — Admin Telegram ID for errors
-- `CRON_SCHEDULE` — Scraping schedule (default: `0 * * * *`)
-- `REQUEST_DELAY_MS` — Delay between requests (default: `2500`)
-- `LOG_LEVEL` — Logging verbosity (default: `info`)
 
 See [env.example](env.example) for complete list.
 

@@ -11,6 +11,7 @@ import {
   BotSchemaType,
 } from '@list-am-bot/common/config/bot.config';
 import { postgresConfig } from '@list-am-bot/common/config/database.config';
+import scraperConfig from '@list-am-bot/common/config/scraper.config';
 import { getSessionMiddleware } from '@list-am-bot/common/middleware/session.middleware';
 import { LIST_AM_BOT } from '@list-am-bot/constants';
 import { TypeOrmDatabaseModule } from '@list-am-bot/infrastructure/database/typeorm/typeorm-database.module';
@@ -23,7 +24,7 @@ import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
     ConfigModule.forRoot({
       isGlobal: true,
       cache: true,
-      load: [appConfig, botConfig, postgresConfig],
+      load: [appConfig, botConfig, postgresConfig, scraperConfig],
     }),
     TelegrafModule.forRootAsync({
       botName: LIST_AM_BOT,

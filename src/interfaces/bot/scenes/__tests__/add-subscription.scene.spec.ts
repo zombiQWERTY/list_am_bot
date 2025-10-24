@@ -13,7 +13,10 @@ import {
   InvalidQueryException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import { BotContext } from '@list-am-bot/context/context.interface';
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { UserEntity, UserLanguage } from '@list-am-bot/domain/user/user.entity';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
@@ -149,6 +152,7 @@ describe('AddSubscriptionScene', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -193,7 +197,11 @@ describe('AddSubscriptionScene', (): void => {
 
       await service.onQueryInput(ctx as unknown as WizardContext);
 
-      expect(ctx.reply).toHaveBeenCalledWith('User not found');
+      expect(ctx.reply).toHaveBeenCalledWith('User not found', {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     });
 
     it('should create subscription with query', async (): Promise<void> => {
@@ -225,7 +233,11 @@ describe('AddSubscriptionScene', (): void => {
 
       await service.onQueryInput(ctx as unknown as WizardContext);
 
-      expect(ctx.reply).toHaveBeenCalledWith('Duplicate');
+      expect(ctx.reply).toHaveBeenCalledWith('Duplicate', {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     });
 
     it('should handle invalid query error', async (): Promise<void> => {
@@ -236,7 +248,11 @@ describe('AddSubscriptionScene', (): void => {
 
       await service.onQueryInput(ctx as unknown as WizardContext);
 
-      expect(ctx.reply).toHaveBeenCalledWith('Invalid query');
+      expect(ctx.reply).toHaveBeenCalledWith('Invalid query', {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     });
 
     it('should handle general error', async (): Promise<void> => {
@@ -245,7 +261,11 @@ describe('AddSubscriptionScene', (): void => {
 
       await service.onQueryInput(ctx as unknown as WizardContext);
 
-      expect(ctx.reply).toHaveBeenCalledWith('Error');
+      expect(ctx.reply).toHaveBeenCalledWith('Error', {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     });
   });
 });

@@ -11,7 +11,7 @@ WORKDIR /usr/src/app
 
 RUN apk upgrade --no-cache --no-interactive
 RUN apk add --no-cache tzdata
-ENV TZ=Europe/Moscow
+ENV TZ=Asia/Yerevan
 
 COPY --from=build /usr/src/app/node_modules /usr/src/app/node_modules
 COPY --from=build /usr/src/app/dist /usr/src/app/dist

@@ -3,7 +3,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository } from 'typeorm';
 
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import { CreateSubscriptionDto } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 import { SubscriptionMapper } from '@list-am-bot/infrastructure/database/typeorm/mappers/subscription.mapper';
 import { SubscriptionProviderToken } from '@list-am-bot/infrastructure/database/typeorm/providers/subscription.provider';
@@ -54,6 +58,7 @@ describe('SubscriptionRepository', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -63,6 +68,7 @@ describe('SubscriptionRepository', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -80,23 +86,43 @@ describe('SubscriptionRepository', (): void => {
     });
 
     it('should create subscription with correct data', async (): Promise<void> => {
-      await repository.create(1, 'test query');
+      const createDto: CreateSubscriptionDto = {
+        userId: 1,
+        query: 'test query',
+        type: SubscriptionType.QUERY,
+      };
+
+      await repository.create(createDto);
 
       expect(repo.create).toHaveBeenCalledWith({
         userId: 1,
         query: 'test query',
+        name: undefined,
+        type: SubscriptionType.QUERY,
         isActive: true,
       });
     });
 
     it('should save created subscription', async (): Promise<void> => {
-      await repository.create(1, 'test query');
+      const createDto: CreateSubscriptionDto = {
+        userId: 1,
+        query: 'test query',
+        type: SubscriptionType.QUERY,
+      };
+
+      await repository.create(createDto);
 
       expect(repo.save).toHaveBeenCalledWith(mockSubscriptionDto);
     });
 
     it('should map saved subscription to domain', async (): Promise<void> => {
-      await repository.create(1, 'test query');
+      const createDto: CreateSubscriptionDto = {
+        userId: 1,
+        query: 'test query',
+        type: SubscriptionType.QUERY,
+      };
+
+      await repository.create(createDto);
 
       expect(SubscriptionMapper.toDomain).toHaveBeenCalledWith(
         mockSubscriptionDto,
@@ -104,7 +130,13 @@ describe('SubscriptionRepository', (): void => {
     });
 
     it('should return domain subscription entity', async (): Promise<void> => {
-      const result = await repository.create(1, 'test query');
+      const createDto: CreateSubscriptionDto = {
+        userId: 1,
+        query: 'test query',
+        type: SubscriptionType.QUERY,
+      };
+
+      const result = await repository.create(createDto);
 
       expect(result).toBe(mockSubscription);
     });
@@ -119,6 +151,7 @@ describe('SubscriptionRepository', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -128,6 +161,7 @@ describe('SubscriptionRepository', (): void => {
         id: 1,
         userId: 1,
         query: 'test query',
+        type: SubscriptionType.QUERY,
         isActive: true,
         createdAt: mockDate,
         updatedAt: mockDate,
@@ -177,6 +211,7 @@ describe('SubscriptionRepository', (): void => {
           id: 1,
           userId: 1,
           query: 'query 1',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -185,6 +220,7 @@ describe('SubscriptionRepository', (): void => {
           id: 2,
           userId: 1,
           query: 'query 2',
+          type: SubscriptionType.QUERY,
           isActive: false,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -197,6 +233,7 @@ describe('SubscriptionRepository', (): void => {
             id: dto.id,
             userId: dto.userId,
             query: dto.query,
+            type: SubscriptionType.QUERY,
             isActive: dto.isActive,
             createdAt: dto.createdAt,
             updatedAt: dto.updatedAt,
@@ -255,6 +292,7 @@ describe('SubscriptionRepository', (): void => {
           id: 1,
           userId: 1,
           query: 'query 1',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,
@@ -267,6 +305,7 @@ describe('SubscriptionRepository', (): void => {
             id: dto.id,
             userId: dto.userId,
             query: dto.query,
+            type: SubscriptionType.QUERY,
             isActive: dto.isActive,
             createdAt: dto.createdAt,
             updatedAt: dto.updatedAt,
@@ -308,7 +347,11 @@ describe('SubscriptionRepository', (): void => {
     it('should return true when subscription exists', async (): Promise<void> => {
       repo.existsBy.mockResolvedValue(true);
 
-      const result = await repository.exists(1, 'test query');
+      const result = await repository.exists(
+        1,
+        'test query',
+        SubscriptionType.QUERY,
+      );
 
       expect(result).toBe(true);
     });
@@ -316,20 +359,25 @@ describe('SubscriptionRepository', (): void => {
     it('should return false when subscription does not exist', async (): Promise<void> => {
       repo.existsBy.mockResolvedValue(false);
 
-      const result = await repository.exists(1, 'test query');
+      const result = await repository.exists(
+        1,
+        'test query',
+        SubscriptionType.QUERY,
+      );
 
       expect(result).toBe(false);
     });
 
-    it('should check existence by user id, query and active status', async (): Promise<void> => {
+    it('should check existence by user id, query, type and active status', async (): Promise<void> => {
       repo.existsBy.mockResolvedValue(true);
 
-      await repository.exists(1, 'test query');
+      await repository.exists(1, 'test query', SubscriptionType.QUERY);
 
       expect(repo.existsBy).toHaveBeenCalledWith({
         userId: 1,
         query: 'test query',
         isActive: true,
+        type: SubscriptionType.QUERY,
       });
     });
   });

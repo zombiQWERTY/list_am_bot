@@ -1,8 +1,14 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Repository } from 'typeorm';
 
-import { ISubscriptionRepository } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  CreateSubscriptionDto,
+  ISubscriptionRepository,
+} from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 import { SubscriptionMapper } from '@list-am-bot/infrastructure/database/typeorm/mappers/subscription.mapper';
 import { SubscriptionProviderToken } from '@list-am-bot/infrastructure/database/typeorm/providers/subscription.provider';
@@ -14,10 +20,12 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     private readonly repo: Repository<SubscriptionEntityDto>,
   ) {}
 
-  async create(userId: number, query: string): Promise<SubscriptionEntity> {
+  async create(data: CreateSubscriptionDto): Promise<SubscriptionEntity> {
     const subscription = this.repo.create({
-      userId,
-      query,
+      userId: data.userId,
+      query: data.query,
+      name: data.name,
+      type: data.type || SubscriptionType.QUERY,
       isActive: true,
     });
 
@@ -56,8 +64,23 @@ export class SubscriptionRepository implements ISubscriptionRepository {
     );
   }
 
-  async exists(userId: number, query: string): Promise<boolean> {
-    return this.repo.existsBy({ userId, query, isActive: true });
+  async exists(
+    userId: number,
+    query: string,
+    type?: SubscriptionType,
+  ): Promise<boolean> {
+    const where: {
+      userId: number;
+      query: string;
+      isActive: boolean;
+      type?: SubscriptionType;
+    } = { userId, query, isActive: true };
+
+    if (type) {
+      where.type = type;
+    }
+
+    return this.repo.existsBy(where);
   }
 
   async deactivate(id: number): Promise<void> {

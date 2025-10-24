@@ -175,7 +175,6 @@ const userName = 'John';
 function getUserById() {}
 
 // Constants: UPPER_SNAKE_CASE
-const MAX_RETRIES = 3;
 const LIST_AM_BOT = 'LIST_AM_BOT';
 
 // Files: kebab-case

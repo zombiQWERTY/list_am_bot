@@ -19,20 +19,18 @@ describe('FlaresolvrrService', (): void => {
     configService = mockDeep<ConfigService>();
     mockAxiosInstance = mockDeep<AxiosInstance>();
 
-    configService.get.mockImplementation(
-      (key: string, defaultValue?: unknown): unknown => {
-        if (key === 'FLARESOLVERR_URL') {
-          return 'http://localhost:8191';
-        }
-        if (key === 'FLARESOLVERR_MAX_TIMEOUT') {
-          return '60000';
-        }
-        if (key === 'FLARESOLVERR_ENABLE_FALLBACK') {
-          return 'false';
-        }
-        return defaultValue;
-      },
-    );
+    configService.get.mockImplementation((key: string): unknown => {
+      if (key === 'scraper') {
+        return {
+          flaresolverr: {
+            url: 'http://localhost:8191',
+            port: 8191,
+            maxTimeout: 60000,
+          },
+        };
+      }
+      return undefined;
+    });
 
     mockedAxios.create.mockReturnValue(mockAxiosInstance as never);
     mockedAxios.isAxiosError.mockReturnValue(false);

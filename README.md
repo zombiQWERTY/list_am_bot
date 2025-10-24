@@ -39,10 +39,12 @@ List.am Bot is a powerful Telegram bot that helps you never miss important deals
 ### Core Functionality
 
 - **📝 Subscription Management**
-  - Create multiple search subscriptions
+  - Create text-based search subscriptions
+  - Create URL-based subscriptions with custom filters
   - Pause/resume notifications per user
-  - View active subscriptions
+  - View active subscriptions with type indicators
   - Delete individual or all subscriptions
+  - Named subscriptions for better organization
 
 - **🔍 Intelligent Scraping**
   - HTML parsing with Cheerio
@@ -241,6 +243,7 @@ FLARESOLVERR_ENABLE_FALLBACK=true
 
 # FlareSolverr connection settings
 FLARESOLVERR_URL=http://list_am_bot.flaresolverr:8191
+FLARESOLVERR_PORT=8191
 FLARESOLVERR_MAX_TIMEOUT=60000
 ```
 
@@ -349,29 +352,120 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ---
 
+## 📖 Usage Examples
+
+### Creating Subscriptions
+
+The bot supports two types of subscriptions:
+
+#### 1. Text-Based Subscriptions
+
+Simple keyword search across all categories:
+
+```
+User: /start
+Bot: Welcome! Choose an action:
+User: [Click "➕ Добавить текстом"]
+Bot: Send your search query
+User: Chevrolet Tahoe
+Bot: ✅ Subscription created!
+```
+
+**Best for:**
+
+- Simple keyword searches
+- Brand/model names
+- Generic terms
+
+#### 2. URL-Based Subscriptions
+
+Advanced filtering using list.am's filter system:
+
+```
+User: /start
+Bot: Welcome! Choose an action:
+User: [Click "🔗 Добавить по URL"]
+Bot: Send a list.am URL with filters
+User: https://www.list.am/category/212?n=2&price1=10000&price2=50000&cid=0
+Bot: Name your subscription (3-100 characters)
+User: Tahoe under $50k
+Bot: ✅ Subscription created: "Tahoe under $50k"
+```
+
+**Best for:**
+
+- Category-specific searches
+- Price range filtering
+- Region/location filtering
+- Combined filters
+
+### How to Get a Filter URL
+
+1. Visit [list.am](https://www.list.am)
+2. Select your category (e.g., Cars & Motorcycles)
+3. Apply desired filters:
+   - Price range
+   - Region
+   - Condition
+   - etc.
+4. Copy the URL from browser's address bar
+5. Paste it into the bot
+
+**Example URLs:**
+
+```
+Cars $10k-$50k in Yerevan:
+https://www.list.am/category/212?n=2&price1=10000&price2=50000&cid=0
+
+Electronics in Avan:
+https://www.list.am/category/224?n=2&cid=14
+
+Real Estate 2+ bedrooms:
+https://www.list.am/category/0/rooms-2/
+```
+
+### Viewing Subscriptions
+
+URL subscriptions are displayed with a 🔗 icon and their custom name:
+
+```
+📋 Your subscriptions (3):
+
+1. Chevrolet Tahoe              [🗑]
+2. 🔗 Tahoe under $50k          [🗑]
+3. 🔗 Electronics in Avan       [🗑]
+```
+
+### Tips
+
+- **URL subscriptions** must be from `list.am` domain only
+- Names help identify URL subscriptions at a glance
+- You can have both text and URL subscriptions simultaneously
+- Notifications include the subscription name/query for context
+
+---
+
 ## ⚙️ Configuration
 
 ### Environment Variables
 
-| Variable                   | Description                               | Default               | Required |
-| -------------------------- | ----------------------------------------- | --------------------- | -------- |
-| `BOT_TOKEN`                | Telegram Bot API token                    | -                     | ✅       |
-| `BOT_INCIDENTS_USER_ID`    | Admin Telegram ID for error notifications | -                     | ❌       |
-| `BOT_DOMAIN`               | Domain for webhook (production)           | -                     | ❌       |
-| `BOT_WEBHOOK_URL`          | Webhook path                              | `/telegram-webhook`   | ❌       |
-| `CRON_SCHEDULE`            | Scraping schedule (cron format)           | `0 * * * *`           | ❌       |
-| `FETCH_TIMEOUT_MS`         | HTTP request timeout                      | `15000`               | ❌       |
-| `REQUEST_DELAY_MS`         | Delay between requests                    | `2500`                | ❌       |
-| `MAX_RETRIES`              | Maximum retry attempts                    | `3`                   | ❌       |
-| `LISTAM_BASE_URL`          | List.am base URL                          | `https://www.list.am` | ❌       |
-| `POSTGRES_HOST`            | PostgreSQL host                           | `localhost`           | ✅       |
-| `POSTGRES_PORT`            | PostgreSQL port                           | `5432`                | ✅       |
-| `POSTGRES_USERNAME`        | Database user                             | -                     | ✅       |
-| `POSTGRES_PASSWORD`        | Database password                         | -                     | ✅       |
-| `POSTGRES_NAME`            | Database name                             | `list_am_bot`         | ✅       |
-| `POSTGRES_TELEGRAF_SCHEMA` | Schema for Telegraf sessions              | `public`              | ❌       |
-| `NODE_ENV`                 | Environment mode                          | `development`         | ❌       |
-| `LOG_LEVEL`                | Logging level                             | `info`                | ❌       |
+| Variable                       | Description                               | Default                 | Required |
+| ------------------------------ | ----------------------------------------- | ----------------------- | -------- |
+| `BOT_TOKEN`                    | Telegram Bot API token                    | -                       | ✅       |
+| `BOT_INCIDENTS_USER_ID`        | Admin Telegram ID for error notifications | -                       | ✅       |
+| `BOT_DOMAIN`                   | Domain for webhook (production)           | -                       | ❌       |
+| `BOT_WEBHOOK_URL`              | Webhook path                              | `/telegram-webhook`     | ❌       |
+| `POSTGRES_HOST`                | PostgreSQL host                           | `localhost`             | ✅       |
+| `POSTGRES_PORT`                | PostgreSQL port                           | `5432`                  | ✅       |
+| `POSTGRES_USERNAME`            | Database user                             | -                       | ✅       |
+| `POSTGRES_PASSWORD`            | Database password                         | -                       | ✅       |
+| `POSTGRES_NAME`                | Database name                             | `list_am_bot`           | ✅       |
+| `POSTGRES_TELEGRAF_SCHEMA`     | Schema for Telegraf sessions              | `public`                | ❌       |
+| `NODE_ENV`                     | Environment mode                          | `development`           | ❌       |
+| `FETCH_TIMEOUT_MS`             | HTTP request timeout (ms)                 | `15000`                 | ❌       |
+| `FLARESOLVERR_URL`             | FlareSolverr service URL                  | `http://localhost:8191` | ✅       |
+| `FLARESOLVERR_PORT`            | FlareSolverr service port                 | `8191`                  | ✅       |
+| `FLARESOLVERR_MAX_TIMEOUT`     | FlareSolverr timeout (ms)                 | `60000`                 | ❌       |
 
 ### FlareSolverr (Optional)
 

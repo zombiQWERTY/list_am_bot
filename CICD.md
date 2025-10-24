@@ -112,17 +112,10 @@ BOT_ENVIRONMENT=production
 BOT_DOMAIN=your-domain.com
 BOT_WEBHOOK_URL=/telegram-webhook
 
-CRON_SCHEDULE=0 * * * *
-FETCH_TIMEOUT_MS=15000
-REQUEST_DELAY_MS=2500
-MAX_RETRIES=3
-
-LISTAM_BASE_URL=https://www.list.am
-
 FLARESOLVERR_URL=http://flaresolverr:8191
+FLARESOLVERR_PORT=8191
 FLARESOLVERR_MAX_TIMEOUT=60000
 
-LOG_LEVEL=info
 NODE_ENV=production
 
 POSTGRES_HOST=list_am_bot.postgres
@@ -189,14 +182,8 @@ If you prefer separate variables instead of single `CONFIG`:
 | `BOT_ENVIRONMENT`          | Environment name                  | `production`               |
 | `BOT_DOMAIN`               | Domain for webhook                | `your-domain.com`          |
 | `BOT_WEBHOOK_URL`          | Webhook path                      | `/telegram-webhook`        |
-| `CRON_SCHEDULE`            | Scraping schedule (cron format)   | `0 * * * *`                |
-| `FETCH_TIMEOUT_MS`         | HTTP request timeout              | `15000`                    |
-| `REQUEST_DELAY_MS`         | Delay between requests            | `2500`                     |
-| `MAX_RETRIES`              | Maximum retry attempts            | `3`                        |
-| `LISTAM_BASE_URL`          | List.am base URL                  | `https://www.list.am`      |
 | `FLARESOLVERR_URL`         | FlareSolverr service URL          | `http://flaresolverr:8191` |
-| `FLARESOLVERR_MAX_TIMEOUT` | FlareSolverr timeout              | `60000`                    |
-| `LOG_LEVEL`                | Logging level                     | `info`                     |
+| `FLARESOLVERR_PORT`        | FlareSolverr service port         | `8191`                     |
 | `NODE_ENV`                 | Node environment                  | `production`               |
 | `POSTGRES_HOST`            | PostgreSQL hostname               | `list_am_bot.postgres`     |
 | `POSTGRES_PORT`            | PostgreSQL port                   | `5432`                     |

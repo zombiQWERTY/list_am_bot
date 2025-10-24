@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 
@@ -19,21 +18,14 @@ describe('ScraperService', (): void => {
   let service: ScraperService;
   let flaresolvrrService: DeepMockProxy<FlaresolvrrService>;
   let parserService: DeepMockProxy<ParserService>;
-  let configService: DeepMockProxy<ConfigService>;
   let seenListingRepository: DeepMockProxy<ISeenListingRepository>;
   let metricsService: DeepMockProxy<MetricsService>;
 
   beforeEach(async (): Promise<void> => {
     flaresolvrrService = mockDeep<FlaresolvrrService>();
     parserService = mockDeep<ParserService>();
-    configService = mockDeep<ConfigService>();
     seenListingRepository = mockDeep<ISeenListingRepository>();
     metricsService = mockDeep<MetricsService>();
-
-    configService.get.mockImplementation((key: string): unknown => {
-      if (key === 'app.listAmBaseUrl') return 'https://www.list.am';
-      return undefined;
-    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -45,10 +37,6 @@ describe('ScraperService', (): void => {
         {
           provide: ParserService,
           useValue: parserService,
-        },
-        {
-          provide: ConfigService,
-          useValue: configService,
         },
         {
           provide: MetricsService,

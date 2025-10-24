@@ -36,7 +36,6 @@ BOT_TOKEN=your_telegram_bot_token_here
 **Optional but recommended:**
 
 - `BOT_INCIDENTS_USER_ID` — Your Telegram user ID for error notifications
-- `CRON_SCHEDULE` — Scraping schedule (default: every hour)
 
 ### 3. Start Services
 

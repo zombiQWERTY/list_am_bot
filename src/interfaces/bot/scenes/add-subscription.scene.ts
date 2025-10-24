@@ -86,13 +86,22 @@ export class AddSubscriptionScene {
   private async handleCancel(ctx: WizardContext): Promise<void> {
     await this.leaveScene(ctx);
     await ctx.reply(this.messages.canceled(), {
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    });
+    await ctx.reply(this.messages.menu(), {
       reply_markup: this.keyboards.mainMenu(),
     });
   }
 
   private async handleUserNotFound(ctx: WizardContext): Promise<void> {
     await this.leaveScene(ctx);
-    await ctx.reply(this.messages.userNotFound());
+    await ctx.reply(this.messages.userNotFound(), {
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    });
   }
 
   private async handleSubscriptionCreated(
@@ -111,6 +120,11 @@ export class AddSubscriptionScene {
 
     await this.leaveScene(ctx);
     await ctx.reply(this.messages.subscriptionAdded(query), {
+      reply_markup: {
+        remove_keyboard: true,
+      },
+    });
+    await ctx.reply(this.messages.menu(), {
       reply_markup: this.keyboards.mainMenu(),
     });
   }
@@ -121,13 +135,26 @@ export class AddSubscriptionScene {
     query: string,
   ): Promise<void> {
     if (error instanceof DuplicateSubscriptionException) {
-      await ctx.reply(this.messages.duplicateSubscription(query));
+      await ctx.reply(this.messages.duplicateSubscription(query), {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     } else if (error instanceof InvalidQueryException) {
       await ctx.reply(
         this.messages.invalidQuery(error.message || 'Неверный формат запроса'),
+        {
+          reply_markup: {
+            remove_keyboard: true,
+          },
+        },
       );
     } else {
-      await ctx.reply(this.messages.error());
+      await ctx.reply(this.messages.error(), {
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
     }
   }
 

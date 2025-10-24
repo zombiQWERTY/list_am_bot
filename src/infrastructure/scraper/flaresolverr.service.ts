@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 
+import { ScraperConfig } from '@list-am-bot/common/config/scraper.config';
 import { RateLimiter } from '@list-am-bot/common/utils/rate-limiter.util';
 
 interface FlareSolverrRequest {
@@ -47,19 +48,13 @@ export class FlaresolvrrService {
   private readonly rateLimiter: RateLimiter;
 
   constructor(private readonly configService: ConfigService) {
+    const scraperConfig = this.configService.get<ScraperConfig>('scraper');
+
     // List.am rate limit: Be respectful, limit to 2 requests per second
     this.rateLimiter = new RateLimiter(2, 2);
-    this.baseUrl = this.configService.get<string>(
-      'FLARESOLVERR_URL',
-      'http://list_am_bot.flaresolverr:8191',
-    );
-    this.maxTimeout = parseInt(
-      this.configService.get<string>('FLARESOLVERR_MAX_TIMEOUT', '60000'),
-      10,
-    );
-    this.enableFallback =
-      this.configService.get<string>('FLARESOLVERR_ENABLE_FALLBACK', 'true') ===
-      'true';
+
+    this.baseUrl = scraperConfig.flaresolverr.url;
+    this.maxTimeout = scraperConfig.flaresolverr.maxTimeout;
 
     this.client = axios.create({
       baseURL: this.baseUrl,

@@ -9,6 +9,7 @@ import { BotUpdate } from '@list-am-bot/interfaces/bot/bot.update';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
 import { BotMessages } from '@list-am-bot/interfaces/bot/messages/bot.messages';
 import { AddSubscriptionScene } from '@list-am-bot/interfaces/bot/scenes/add-subscription.scene';
+import { AddUrlSubscriptionScene } from '@list-am-bot/interfaces/bot/scenes/add-url-subscription.scene';
 import { MonitoringModule } from '@list-am-bot/modules/monitoring.module';
 import { ScraperModule } from '@list-am-bot/modules/scraper.module';
 import { SubscriptionModule } from '@list-am-bot/modules/subscription.module';
@@ -27,6 +28,7 @@ import { WorkerModule } from '@list-am-bot/modules/worker.module';
   providers: [
     BotUpdate,
     AddSubscriptionScene,
+    AddUrlSubscriptionScene,
     MenuActions,
     BotKeyboards,
     BotMessages,

@@ -6,7 +6,10 @@ import { DeepMockProxy, mockDeep } from 'jest-mock-extended';
 import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import { BotContext } from '@list-am-bot/context/context.interface';
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 import { UserEntity, UserLanguage } from '@list-am-bot/domain/user/user.entity';
 import { MenuActions } from '@list-am-bot/interfaces/bot/actions/menu.actions';
 import { BotKeyboards } from '@list-am-bot/interfaces/bot/keyboards/bot.keyboards';
@@ -111,6 +114,7 @@ describe('MenuActions', (): void => {
           id: 1,
           userId: 1,
           query: 'test query',
+          type: SubscriptionType.QUERY,
           isActive: true,
           createdAt: mockDate,
           updatedAt: mockDate,

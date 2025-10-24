@@ -4,11 +4,15 @@ import {
   DuplicateSubscriptionException,
   InvalidQueryException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
+import { ListAmUrlUtil } from '@list-am-bot/common/utils/list-am-url.util';
 import {
   SubscriptionRepositoryPort,
   ISubscriptionRepository,
 } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 
 @Injectable()
 export class SubscriptionService {
@@ -28,13 +32,55 @@ export class SubscriptionService {
     const exists = await this.subscriptionRepository.exists(
       userId,
       trimmedQuery,
+      SubscriptionType.QUERY,
     );
 
     if (exists) {
       throw new DuplicateSubscriptionException(trimmedQuery);
     }
 
-    return this.subscriptionRepository.create(userId, trimmedQuery);
+    return this.subscriptionRepository.create({
+      userId,
+      query: trimmedQuery,
+      type: SubscriptionType.QUERY,
+    });
+  }
+
+  async createFromUrl(
+    userId: number,
+    url: string,
+    name: string,
+  ): Promise<SubscriptionEntity> {
+    if (!ListAmUrlUtil.isValidListAmUrl(url)) {
+      throw new InvalidQueryException('URL must be from list.am domain');
+    }
+
+    if (!ListAmUrlUtil.isValidSubscriptionName(name)) {
+      throw new InvalidQueryException(
+        'Name must be between 3 and 100 characters',
+      );
+    }
+
+    const normalizedUrl = ListAmUrlUtil.normalizeUrl(url);
+
+    const exists = await this.subscriptionRepository.exists(
+      userId,
+      normalizedUrl,
+      SubscriptionType.URL,
+    );
+
+    if (exists) {
+      throw new DuplicateSubscriptionException(
+        'This URL subscription already exists',
+      );
+    }
+
+    return this.subscriptionRepository.create({
+      userId,
+      query: normalizedUrl,
+      name: name.trim(),
+      type: SubscriptionType.URL,
+    });
   }
 
   async findByUserId(userId: number): Promise<SubscriptionEntity[]> {

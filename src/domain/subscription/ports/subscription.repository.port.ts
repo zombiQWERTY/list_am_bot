@@ -1,9 +1,19 @@
-import { SubscriptionEntity } from '@list-am-bot/domain/subscription/subscription.entity';
+import {
+  SubscriptionEntity,
+  SubscriptionType,
+} from '@list-am-bot/domain/subscription/subscription.entity';
 
 export const SubscriptionRepositoryPort = Symbol('SubscriptionRepositoryPort');
 
+export interface CreateSubscriptionDto {
+  userId: number;
+  query: string;
+  name?: string;
+  type?: SubscriptionType;
+}
+
 export interface ISubscriptionRepository {
-  create(userId: number, query: string): Promise<SubscriptionEntity>;
+  create(data: CreateSubscriptionDto): Promise<SubscriptionEntity>;
 
   findById(id: number): Promise<SubscriptionEntity | null>;
 
@@ -14,7 +24,11 @@ export interface ISubscriptionRepository {
 
   findActiveByUserId(userId: number): Promise<SubscriptionEntity[]>;
 
-  exists(userId: number, query: string): Promise<boolean>;
+  exists(
+    userId: number,
+    query: string,
+    type?: SubscriptionType,
+  ): Promise<boolean>;
 
   deactivate(id: number): Promise<void>;
 
