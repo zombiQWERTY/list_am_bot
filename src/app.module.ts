@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TelegrafModule, TelegrafModuleOptions } from 'nestjs-telegraf';
 
@@ -32,22 +32,38 @@ import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
       useFactory: (
         botCfg: BotSchemaType,
         appCfg: AppSchemaType,
-      ): TelegrafModuleOptions => ({
-        token: botCfg.botToken,
-        middlewares: [getSessionMiddleware()],
-        include: [BotModule],
-        launchOptions: {
-          allowedUpdates: ['message', 'callback_query'],
-          dropPendingUpdates: true,
-          webhook:
-            appCfg.node_env === 'production' && botCfg.botDomain
+      ): TelegrafModuleOptions => {
+        const logger = new Logger('TelegrafModule');
+        const webhookPath = botCfg.botWebhookUrl || '/api/webhook';
+        const isProduction = appCfg.node_env === 'production';
+        const hasWebhook = isProduction && botCfg.botDomain;
+
+        logger.log(`🤖 Bot configuration:`);
+        logger.log(`  - Environment: ${appCfg.node_env}`);
+        logger.log(`  - Mode: ${hasWebhook ? 'WEBHOOK' : 'POLLING'}`);
+
+        if (hasWebhook) {
+          logger.log(`  - Domain: ${botCfg.botDomain}`);
+          logger.log(`  - Webhook path: ${webhookPath}`);
+          logger.log(`  - Full webhook URL: ${botCfg.botDomain}${webhookPath}`);
+        }
+
+        return {
+          token: botCfg.botToken,
+          middlewares: [getSessionMiddleware()],
+          include: [BotModule],
+          launchOptions: {
+            allowedUpdates: ['message', 'callback_query'],
+            dropPendingUpdates: true,
+            webhook: hasWebhook
               ? {
                   domain: botCfg.botDomain,
-                  path: botCfg.botWebhookUrl || '/telegram-webhook',
+                  path: webhookPath,
                 }
               : undefined,
-        },
-      }),
+          },
+        };
+      },
     }),
     TypeOrmDatabaseModule,
     BotModule,
