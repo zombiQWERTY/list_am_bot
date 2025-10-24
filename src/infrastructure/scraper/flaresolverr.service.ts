@@ -36,7 +36,6 @@ interface FlareSolverrResponse {
 export class FlaresolvrrService {
   private readonly logger = new Logger(FlaresolvrrService.name);
   private readonly client: AxiosInstance;
-  private readonly directClient: AxiosInstance;
   private readonly baseUrl: string;
   private readonly maxTimeout: number;
   private readonly maxRetries = 3;
@@ -60,14 +59,6 @@ export class FlaresolvrrService {
       timeout: this.maxTimeout + 5000,
       headers: {
         'Content-Type': 'application/json',
-      },
-    });
-
-    this.directClient = axios.create({
-      timeout: 30000,
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
       },
     });
 
