@@ -18,8 +18,11 @@ COPY --from=build /usr/src/app/dist /usr/src/app/dist
 COPY --from=build /usr/src/app /usr/src/app
 
 COPY ./infra/prod/entrypoint.sh /tmp/entrypoint.sh
+COPY ./infra/dev/typeorm-migrate.sh /tmp/typeorm-migrate.sh
+COPY ./infra/dev/typeorm-revert.sh /tmp/typeorm-revert.sh
+COPY ./infra/dev/typeorm-generate.sh /tmp/typeorm-generate.sh
 
 RUN chmod +x /tmp/entrypoint.sh && \
   chmod +x /tmp/typeorm-migrate.sh && \
   chmod +x /tmp/typeorm-revert.sh && \
-  chmod +x /tmp/typeorm-generate.sh && \
+  chmod +x /tmp/typeorm-generate.sh
