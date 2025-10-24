@@ -38,6 +38,7 @@ export class SubscriptionEntityDto implements SubscriptionEntity {
   @ManyToOne(
     (): typeof UserEntityDto => UserEntityDto,
     (user): SubscriptionEntityDto[] | undefined => user.subscriptions,
+    { onDelete: 'CASCADE' },
   )
   user?: UserEntityDto;
 

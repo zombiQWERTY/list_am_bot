@@ -62,6 +62,14 @@ List.am Bot is a powerful Telegram bot that helps you never miss important deals
   - Global exception filter with admin notifications
   - Webhook support for production deployments
 
+- **📊 Monitoring & Metrics**
+  - Real-time metrics collection and storage
+  - Scraping performance tracking (duration, success rate)
+  - Notification delivery statistics
+  - Queue size monitoring
+  - Active subscriptions tracking
+  - Daily automated reports to admin (24h, 7d, 30d)
+
 ### Technical Highlights
 
 - **Clean Architecture** with Domain-Driven Design principles
@@ -70,6 +78,9 @@ List.am Bot is a powerful Telegram bot that helps you never miss important deals
 - **Winston** logging with daily rotation
 - **Cron-based** scheduling with manual queue override
 - **Transaction support** for data consistency
+- **Built-in metrics** for performance monitoring
+- **Rate limiting** for Telegram API and list.am scraping
+- **Health checks** with automatic fallback mechanisms
 
 ---
 
@@ -80,12 +91,14 @@ The project follows a layered architecture separating concerns:
 ```
 src/
 ├── application/          # Application services & use cases
+│   ├── monitoring/       # Metrics collection & analysis
 │   ├── notification/     # Notification logic
 │   ├── scheduler/        # Job scheduling & queue management
 │   ├── subscription/     # Subscription business logic
 │   └── user/             # User management
 ├── domain/               # Domain entities & ports
 │   ├── delivery/         # Notification delivery tracking
+│   ├── metric/           # Performance metrics
 │   ├── seen-listing/     # Listing history
 │   ├── subscription/     # User subscriptions
 │   └── user/             # User entities
@@ -114,6 +127,122 @@ src/
 - **Strategy Pattern** — Pluggable scraper implementations
 - **Observer Pattern** — Event-driven notification system
 - **Queue Pattern** — Priority-based task processing
+
+---
+
+## 📊 Monitoring & Metrics
+
+The bot includes a built-in metrics system that tracks key performance indicators:
+
+### Collected Metrics
+
+| Metric Type              | Description                             | Storage                            |
+| ------------------------ | --------------------------------------- | ---------------------------------- |
+| **Scrape Duration**      | Time taken to scrape each query (ms)    | Database with query metadata       |
+| **Notification Success** | Successful notification deliveries      | Database with user and listing IDs |
+| **Notification Failure** | Failed notifications with error reasons | Database with failure details      |
+| **Queue Size**           | Current scraping queue size             | Database snapshots                 |
+| **Active Subscriptions** | Total active subscriptions per cycle    | Database records                   |
+
+### Metrics Usage
+
+Metrics are automatically collected during bot operation:
+
+- **Scraping metrics** — recorded after each scrape attempt
+- **Notification metrics** — tracked on every delivery attempt
+- **Queue metrics** — updated when tasks are added
+- **Subscription metrics** — collected during each scrape cycle
+
+All metrics are stored in PostgreSQL and can be queried for:
+
+- Performance analysis and optimization
+- Success rate calculation
+- Capacity planning
+- Troubleshooting and debugging
+
+> **Note:** Metrics do not impact bot performance as they are saved asynchronously with error handling.
+
+### Daily Reports
+
+If `BOT_INCIDENTS_USER_ID` is configured, the admin receives automated daily reports at 9:00 AM with metrics for:
+
+- **Last 24 hours** — recent performance snapshot
+- **Last 7 days** — weekly trends
+- **Last 30 days** — monthly overview
+
+Each report includes:
+
+- Average scrape duration
+- Total notifications sent and success rate
+- Average queue size
+- Average active subscriptions
+
+---
+
+## 🔒 Rate Limiting & Reliability
+
+The bot implements comprehensive rate limiting and health check mechanisms to ensure reliable operation and prevent API abuse.
+
+### Rate Limiting
+
+To respect API limits and prevent throttling, the bot uses token bucket rate limiting:
+
+| Service          | Limit      | Description                           |
+| ---------------- | ---------- | ------------------------------------- |
+| **Telegram API** | 25 msg/sec | Conservative limit (official: 30/sec) |
+| **List.am**      | 2 req/sec  | Respectful scraping rate              |
+
+**How it works:**
+
+- Each request consumes one token from the bucket
+- Tokens refill at a constant rate
+- Requests are queued when no tokens are available
+- Automatic backpressure prevents API overload
+
+**Implementation:**
+
+```typescript
+// Telegram notifications automatically rate-limited
+await notificationService.sendListingNotification(payload);
+
+// Scraping requests automatically rate-limited
+const html = await flaresolvrrService.fetchHtml(url);
+```
+
+### FlareSolverr Resilience
+
+The scraping system includes multiple layers of resilience:
+
+1. **Health Checks**
+   - Periodic connection tests (every 60 seconds)
+   - Automatic availability tracking
+   - Status logging for monitoring
+
+2. **Retry with Exponential Backoff**
+   - Up to 3 retry attempts per request
+   - Increasing delays: 1s → 2s → 4s (max 5s)
+   - Prevents overwhelming failed services
+
+3. **Automatic Fallback**
+   - If FlareSolverr is unavailable, falls back to direct HTTP requests
+   - Configurable via `FLARESOLVERR_ENABLE_FALLBACK=true`
+   - Ensures scraping continues even if FlareSolverr fails
+
+4. **Graceful Degradation**
+   - Logs failures without stopping the bot
+   - Continues with available functionality
+   - Admin receives error notifications
+
+**Configuration:**
+
+```env
+# Enable fallback to direct fetch if FlareSolverr fails
+FLARESOLVERR_ENABLE_FALLBACK=true
+
+# FlareSolverr connection settings
+FLARESOLVERR_URL=http://list_am_bot.flaresolverr:8191
+FLARESOLVERR_MAX_TIMEOUT=60000
+```
 
 ---
 
@@ -290,24 +419,24 @@ Migrations in development must be created and run manually:
    docker exec -it list_am_bot.app bash
 
    # Inside container
-   /opt/typeorm-generate.sh <migration-name>
+   /tmp/typeorm-generate.sh <migration-name>
 
    # Example
-   /opt/typeorm-generate.sh AddUserEmailField
+   /tmp/typeorm-generate.sh AddUserEmailField
    ```
 
 2. **Run migrations**
 
    ```bash
    # Inside container
-   /opt/typeorm-migrate.sh
+   /tmp/typeorm-migrate.sh
    ```
 
 3. **Revert last migration** (if needed)
 
    ```bash
    # Inside container
-   /opt/typeorm-revert.sh
+   /tmp/typeorm-revert.sh
    ```
 
 #### Production Environment
@@ -348,7 +477,7 @@ docker exec -it list_am_bot.core bash
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
 
 # Run migrations
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 ```
 
 #### Container Name Not Found
@@ -397,7 +526,7 @@ make up
 docker exec -it list_am_bot.core ls -la src/infrastructure/database/migrations/
 
 # Run migrations manually
-docker exec -it list_am_bot.core /opt/typeorm-migrate.sh
+docker exec -it list_am_bot.core /tmp/typeorm-migrate.sh
 ```
 
 ### Getting Help

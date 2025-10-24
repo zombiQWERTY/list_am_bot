@@ -71,7 +71,6 @@ export class GlobalExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    // TypeORM/Database errors
     if (
       exception &&
       typeof exception === 'object' &&
@@ -89,7 +88,6 @@ export class GlobalExceptionsFilter implements ExceptionFilter {
       };
     }
 
-    // Generic error
     if (exception instanceof Error) {
       return {
         status: HttpStatus.INTERNAL_SERVER_ERROR,

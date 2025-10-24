@@ -413,9 +413,9 @@ make logs            # View logs
 make shell           # Access bot container
 
 # Migrations (inside container via `make shell`)
-/opt/typeorm-generate.sh <name>   # Generate migration
-/opt/typeorm-migrate.sh           # Run migrations
-/opt/typeorm-revert.sh            # Revert last migration
+/tmp/typeorm-generate.sh <name>   # Generate migration
+/tmp/typeorm-migrate.sh           # Run migrations
+/tmp/typeorm-revert.sh            # Revert last migration
 ```
 
 ## 🌟 Recognition

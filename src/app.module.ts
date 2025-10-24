@@ -15,6 +15,7 @@ import { getSessionMiddleware } from '@list-am-bot/common/middleware/session.mid
 import { LIST_AM_BOT } from '@list-am-bot/constants';
 import { TypeOrmDatabaseModule } from '@list-am-bot/infrastructure/database/typeorm/typeorm-database.module';
 import { BotModule } from '@list-am-bot/modules/bot.module';
+import { MonitoringModule } from '@list-am-bot/modules/monitoring.module';
 import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
 
 @Module({
@@ -49,6 +50,7 @@ import { SchedulerAppModule } from '@list-am-bot/modules/scheduler.module';
     }),
     TypeOrmDatabaseModule,
     BotModule,
+    MonitoringModule,
     SchedulerAppModule,
   ],
 })

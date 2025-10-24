@@ -46,11 +46,11 @@ export class SubscriptionService {
   }
 
   async delete(subscriptionId: number): Promise<void> {
-    await this.subscriptionRepository.deleteWithSeenListings(subscriptionId);
+    await this.subscriptionRepository.delete(subscriptionId);
   }
 
   async deleteAll(userId: number): Promise<void> {
-    await this.subscriptionRepository.deleteAllWithSeenListings(userId);
+    await this.subscriptionRepository.deleteAllByUserId(userId);
   }
 
   async count(userId: number): Promise<number> {

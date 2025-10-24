@@ -27,7 +27,7 @@
   ],
   "scripts": {
     "build": "nest build",
-    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" --check",
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:debug": "nest start --debug --watch",
@@ -37,7 +37,9 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "prepare": "node .husky/install.mjs",
+    "lint-staged": "lint-staged -v"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.20",
@@ -113,47 +115,6 @@
     "src/**/*.ts": [
       "npm run format",
       "npm run lint"
-    ]
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.ts$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "**/*.ts"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 80,
-        "functions": 80,
-        "lines": 80,
-        "statements": 80
-      }
-    },
-    "coverageDirectory": "./coverage",
-    "testEnvironment": "node",
-    "roots": [
-      "<rootDir>/src/"
-    ],
-    "coveragePathIgnorePatterns": [
-      "node_modules",
-      "test-config",
-      ".module.ts",
-      ".dto.ts",
-      ".config.ts",
-      ".options.ts",
-      ".consts.ts",
-      ".types.ts",
-      "main.ts",
-      ".mock.ts",
-      ".mapper.ts"
     ]
   }
 }

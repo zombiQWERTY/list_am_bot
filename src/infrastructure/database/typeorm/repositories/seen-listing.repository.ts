@@ -53,7 +53,9 @@ export class SeenListingRepository implements ISeenListingRepository {
     subscriptionId: number,
     listingIds: string[],
   ): Promise<string[]> {
-    if (listingIds.length === 0) return [];
+    if (listingIds.length === 0) {
+      return [];
+    }
 
     const seenListings = await this.repo.find({
       where: {

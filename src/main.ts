@@ -43,6 +43,28 @@ async function bootstrap(): Promise<void> {
     `🌍 Environment: ${process.env.NODE_ENV || 'development'}`,
     'Bootstrap',
   );
+
+  const gracefulShutdown = async (signal: string): Promise<void> => {
+    logger.log(
+      `📥 Received ${signal} signal. Starting graceful shutdown...`,
+      'Bootstrap',
+    );
+
+    try {
+      await app.close();
+      logger.log('✅ Application closed successfully', 'Bootstrap');
+      process.exit(0);
+    } catch (error) {
+      logger.error(
+        `❌ Error during shutdown: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        'Bootstrap',
+      );
+      process.exit(1);
+    }
+  };
+
+  process.on('SIGTERM', (): void => void gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', (): void => void gracefulShutdown('SIGINT'));
 }
 
 void bootstrap();

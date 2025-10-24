@@ -1,6 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { ScraperException } from '@list-am-bot/common/exceptions/bot.exceptions';
 import { Listing, ScrapeResult } from '@list-am-bot/common/types/listing.types';
 import {
@@ -19,6 +20,7 @@ export class ScraperService {
     private readonly flaresolvrrService: FlaresolvrrService,
     private readonly parser: ParserService,
     private readonly configService: ConfigService,
+    private readonly metricsService: MetricsService,
     @Inject(SeenListingRepositoryPort)
     private readonly seenListingRepository: ISeenListingRepository,
   ) {
@@ -29,23 +31,26 @@ export class ScraperService {
   }
 
   async scrapeQuery(query: string, retryOnEmpty = true): Promise<ScrapeResult> {
-    this.logger.log(`Starting scrape for query: "${query}"`);
+    this.logger.debug(`Starting scrape for query: "${query}"`);
+    const startTime = Date.now();
 
     try {
       const searchUrl = this.parser.buildSearchUrl(this.baseUrl, query);
 
-      // Use FlareSolverr for scraping
       const html = await this.flaresolvrrService.fetchHtml(searchUrl);
       const listings = this.parser.extractListings(html, this.baseUrl);
 
-      this.logger.log(
-        `Scrape complete. Found ${listings.length} listings for "${query}"`,
+      const duration = Date.now() - startTime;
+      await this.metricsService.recordScrapeDuration(duration, query);
+
+      this.logger.debug(
+        `Scrape complete. Found ${listings.length} listings for "${query}" (${duration}ms)`,
       );
 
       // If we got 0 listings, it might be Cloudflare blocking
       // Retry once (FlareSolverr will handle it internally)
       if (listings.length === 0 && retryOnEmpty) {
-        this.logger.warn(
+        this.logger.debug(
           `⚠️  Got 0 listings (suspicious - likely Cloudflare). Retrying...`,
         );
 
@@ -59,6 +64,9 @@ export class ScraperService {
         fetchedAt: new Date(),
       };
     } catch (error) {
+      const duration = Date.now() - startTime;
+      await this.metricsService.recordScrapeDuration(duration, query);
+
       this.logger.error(`Scrape failed for query "${query}":`, error);
       throw new ScraperException(
         `Failed to scrape query "${query}": ${error instanceof Error ? error.message : 'Unknown error'}`,
@@ -70,7 +78,9 @@ export class ScraperService {
     subscriptionId: number,
     listings: Listing[],
   ): Promise<Listing[]> {
-    if (listings.length === 0) return [];
+    if (listings.length === 0) {
+      return [];
+    }
 
     const listingIds = listings.map((l): string => l.id);
     const newListingIds = await this.seenListingRepository.filterNewListings(
@@ -85,7 +95,9 @@ export class ScraperService {
     subscriptionId: number,
     listings: Listing[],
   ): Promise<void> {
-    if (listings.length === 0) return;
+    if (listings.length === 0) {
+      return;
+    }
 
     const listingIds = listings.map((l): string => l.id);
     await this.seenListingRepository.markAsSeen(subscriptionId, listingIds);

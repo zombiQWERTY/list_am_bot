@@ -61,7 +61,9 @@ export class ParserService {
     const id = this.extractListingId(fullUrl, href);
 
     const title = this.getTextContent($el.find('.dltitle .pt').first());
-    if (!title) return null;
+    if (!title) {
+      return null;
+    }
 
     const priceText =
       this.getTextContent($el.find('.ad-info-line-wrapper .p').first()) ||
@@ -102,7 +104,9 @@ export class ParserService {
     const src =
       $img.attr('data-original') || $img.attr('src') || $img.attr('data-src');
 
-    if (!src) return undefined;
+    if (!src) {
+      return undefined;
+    }
 
     if (src.startsWith('//')) {
       return `https:${src}`;
@@ -142,7 +146,9 @@ export class ParserService {
   }
 
   private parsePriceValue(priceText?: string): number | null {
-    if (!priceText) return null;
+    if (!priceText) {
+      return null;
+    }
 
     const cleaned = priceText.replace(/[^\d.,]/g, '');
     const normalized = cleaned.replace(/,/g, '.');

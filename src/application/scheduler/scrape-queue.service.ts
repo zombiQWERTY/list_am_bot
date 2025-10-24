@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 
+import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { delay } from '@list-am-bot/common/utils/delay.util';
 
 export enum ScrapePriority {
@@ -22,8 +23,10 @@ export class ScrapeQueueService implements OnModuleInit {
   private isProcessing = false;
   private currentTask: ScrapeTask | null = null;
 
+  constructor(private readonly metricsService: MetricsService) {}
+
   onModuleInit(): void {
-    this.logger.log('✅ Scrape Queue Service initialized');
+    this.logger.debug('✅ Scrape Queue Service initialized');
     this.processQueue().catch((error): void => {
       this.logger.error('Fatal error in queue processor:', error);
     });
@@ -51,6 +54,12 @@ export class ScrapeQueueService implements OnModuleInit {
 
     this.queue.push(task);
     this.queue.sort((a, b): number => a.priority - b.priority);
+
+    this.metricsService
+      .recordQueueSize(this.queue.length)
+      .catch((error): void => {
+        this.logger.error('Failed to record queue size metric:', error);
+      });
 
     this.logger.debug(
       `Task added: ${taskId} (priority: ${priority}, queue size: ${this.queue.length})`,

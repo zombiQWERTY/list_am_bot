@@ -2,19 +2,23 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule as NestTypeOrmModule } from '@nestjs/typeorm';
 
 import { DeliveryRepositoryPort } from '@list-am-bot/domain/delivery/ports/delivery.repository.port';
+import { MetricRepositoryPort } from '@list-am-bot/domain/metric/ports/metric.repository.port';
 import { SeenListingRepositoryPort } from '@list-am-bot/domain/seen-listing/ports/seen-listing.repository.port';
 import { SubscriptionRepositoryPort } from '@list-am-bot/domain/subscription/ports/subscription.repository.port';
 import { UserRepositoryPort } from '@list-am-bot/domain/user/ports/user.repository.port';
 import { databaseProvider } from '@list-am-bot/infrastructure/database/database.provider';
 import { DeliveryEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/delivery.entity.dto';
+import { MetricEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/metric.entity.dto';
 import { SeenListingEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/seen-listing.entity.dto';
 import { SubscriptionEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/subscription.entity.dto';
 import { UserEntityDto } from '@list-am-bot/infrastructure/database/typeorm/entity-dtos/user.entity.dto';
 import { deliveryProvider } from '@list-am-bot/infrastructure/database/typeorm/providers/delivery.provider';
+import { metricProvider } from '@list-am-bot/infrastructure/database/typeorm/providers/metric.provider';
 import { seenListingProvider } from '@list-am-bot/infrastructure/database/typeorm/providers/seen-listing.provider';
 import { subscriptionProvider } from '@list-am-bot/infrastructure/database/typeorm/providers/subscription.provider';
 import { userProvider } from '@list-am-bot/infrastructure/database/typeorm/providers/user.provider';
 import { DeliveryRepository } from '@list-am-bot/infrastructure/database/typeorm/repositories/delivery.repository';
+import { MetricRepository } from '@list-am-bot/infrastructure/database/typeorm/repositories/metric.repository';
 import { SeenListingRepository } from '@list-am-bot/infrastructure/database/typeorm/repositories/seen-listing.repository';
 import { SubscriptionRepository } from '@list-am-bot/infrastructure/database/typeorm/repositories/subscription.repository';
 import { UserRepository } from '@list-am-bot/infrastructure/database/typeorm/repositories/user.repository';
@@ -24,6 +28,7 @@ const customProviders = [
   subscriptionProvider,
   seenListingProvider,
   deliveryProvider,
+  metricProvider,
   {
     provide: UserRepositoryPort,
     useClass: UserRepository,
@@ -40,6 +45,10 @@ const customProviders = [
     provide: DeliveryRepositoryPort,
     useClass: DeliveryRepository,
   },
+  {
+    provide: MetricRepositoryPort,
+    useClass: MetricRepository,
+  },
 ];
 
 @Module({
@@ -50,6 +59,7 @@ const customProviders = [
       SubscriptionEntityDto,
       SeenListingEntityDto,
       DeliveryEntityDto,
+      MetricEntityDto,
     ]),
   ],
   providers: [...customProviders],

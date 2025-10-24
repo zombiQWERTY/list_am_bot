@@ -2,10 +2,12 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
 
+import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
 import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
 import { NotificationPayload } from '@list-am-bot/common/types/listing.types';
+import { RateLimiter } from '@list-am-bot/common/utils/rate-limiter.util';
 import {
   isTelegramBotBlocked,
   isTelegramError,
@@ -20,6 +22,7 @@ import { UserEntity } from '@list-am-bot/domain/user/user.entity';
 @Injectable()
 export class NotificationService {
   private readonly logger = new Logger(NotificationService.name);
+  private readonly telegramRateLimiter: RateLimiter;
 
   constructor(
     @InjectBot(LIST_AM_BOT)
@@ -27,7 +30,12 @@ export class NotificationService {
     @Inject(DeliveryRepositoryPort)
     private readonly deliveryRepository: IDeliveryRepository,
     private readonly userService: UserService,
-  ) {}
+    private readonly metricsService: MetricsService,
+  ) {
+    // Telegram API limit: 30 messages per second globally
+    // Set to 25/sec for safety margin
+    this.telegramRateLimiter = new RateLimiter(25, 25);
+  }
 
   async sendListingNotification(payload: NotificationPayload): Promise<void> {
     this.logger.debug(
@@ -86,6 +94,8 @@ export class NotificationService {
         `Sending Telegram message to ${payload.userTelegramId}...`,
       );
 
+      await this.telegramRateLimiter.acquire();
+
       const sentMessage = await this.bot.telegram.sendMessage(
         payload.userTelegramId,
         message,
@@ -102,10 +112,20 @@ export class NotificationService {
         sentMessage.message_id.toString(),
       );
 
+      await this.metricsService.recordNotificationSuccess(
+        payload.userTelegramId,
+        payload.listing.id,
+      );
+
       this.logger.debug(
         `✅ Notification sent for listing ${payload.listing.id} to user ${payload.userTelegramId}`,
       );
     } catch (error: unknown) {
+      await this.metricsService.recordNotificationFailure(
+        payload.userTelegramId,
+        payload.listing.id,
+        error instanceof Error ? error.message : 'Unknown error',
+      );
       this.handleTelegramError(error, payload.userTelegramId);
     }
   }

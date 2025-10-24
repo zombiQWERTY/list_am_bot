@@ -28,7 +28,9 @@ export class BotUpdate {
 
   @Start()
   async onStart(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const username = ctx.from.username;
@@ -56,7 +58,9 @@ export class BotUpdate {
 
   @Command('status')
   async onStatus(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const user = await this.userService.findByTelegramUserId(userId);
@@ -76,12 +80,14 @@ export class BotUpdate {
 
   @Command('last')
   async onLast(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.message || !('text' in ctx.message)) return;
+    if (!ctx.message || !('text' in ctx.message)) {
+      return;
+    }
 
     const commandText = ctx.message.text;
     const query = commandText.replace(/^\/last\s+/, '').trim();
 
-    this.logger.log(
+    this.logger.debug(
       `/last command received from user ${ctx.from?.id}, query: "${query}"`,
     );
 
@@ -116,7 +122,7 @@ export class BotUpdate {
           ctx.chat?.id,
           searchingMsg.message_id,
           undefined,
-          `❌ Ошибка поиска: ${result.error}`,
+          this.messages.searchError(result.error),
         );
         return;
       }
@@ -150,7 +156,7 @@ export class BotUpdate {
       );
 
       await this.sendListing(ctx, listing);
-      this.logger.log('/last command completed successfully');
+      this.logger.debug('/last command completed successfully');
     } catch (error) {
       this.logger.error('Error in /last command:', error);
       await ctx.telegram.editMessageText(
@@ -172,7 +178,7 @@ export class BotUpdate {
     const match = callbackData.match(/^unsubscribe:(\d+)$/);
 
     if (!match?.[1]) {
-      await ctx.answerCbQuery('❌ Неверный формат');
+      await ctx.answerCbQuery(this.messages.invalidFormat());
       return;
     }
 
@@ -180,10 +186,10 @@ export class BotUpdate {
 
     try {
       await this.subscriptionService.delete(subscriptionId);
-      await ctx.answerCbQuery('✅ Подписка удалена');
+      await ctx.answerCbQuery(this.messages.subscriptionDeleted());
       await ctx.editMessageReplyMarkup({ inline_keyboard: [] });
     } catch {
-      await ctx.answerCbQuery('❌ Ошибка при удалении подписки');
+      await ctx.answerCbQuery(this.messages.deleteError());
     }
   }
 
@@ -198,7 +204,7 @@ export class BotUpdate {
     const message = ListingMessageFormatter.format(listing);
     const keyboard = ListingKeyboard.create({
       url: listing.url,
-      openButtonText: '🔗 Открыть на list.am',
+      openButtonText: this.messages.openOnListAm(),
     });
 
     await ctx.reply(message, {

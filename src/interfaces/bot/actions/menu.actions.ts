@@ -22,7 +22,9 @@ export class MenuActions {
 
   @Action('menu:list')
   async showList(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const user = await this.userService.findByTelegramUserId(userId);
@@ -69,7 +71,9 @@ export class MenuActions {
 
   @Action('clear:yes')
   async clearAll(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const user = await this.userService.findByTelegramUserId(userId);
@@ -97,7 +101,9 @@ export class MenuActions {
 
   @Action('menu:pause')
   async pauseNotifications(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const user = await this.userService.findByTelegramUserId(userId);
@@ -117,7 +123,9 @@ export class MenuActions {
 
   @Action('menu:resume')
   async resumeNotifications(@Ctx() ctx: BotContext): Promise<void> {
-    if (!ctx.from) return;
+    if (!ctx.from) {
+      return;
+    }
 
     const userId = ctx.from.id;
     const user = await this.userService.findByTelegramUserId(userId);

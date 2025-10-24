@@ -1,0 +1,18 @@
+# Dependencies
+node_modules/
+dist/
+
+# TypeORM migrations
+src/infrastructure/database/typeorm/migrations/
+
+# Logs
+logs/
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Build artifacts
+*.js.map
+

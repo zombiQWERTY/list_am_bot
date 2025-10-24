@@ -4,9 +4,10 @@ import { TypeOrmDatabaseModule } from '@list-am-bot/infrastructure/database/type
 import { FlaresolvrrService } from '@list-am-bot/infrastructure/scraper/flaresolverr.service';
 import { ParserService } from '@list-am-bot/infrastructure/scraper/parser.service';
 import { ScraperService } from '@list-am-bot/infrastructure/scraper/scraper.service';
+import { MonitoringModule } from '@list-am-bot/modules/monitoring.module';
 
 @Module({
-  imports: [TypeOrmDatabaseModule],
+  imports: [TypeOrmDatabaseModule, MonitoringModule],
   providers: [FlaresolvrrService, ParserService, ScraperService],
   exports: [ScraperService],
 })

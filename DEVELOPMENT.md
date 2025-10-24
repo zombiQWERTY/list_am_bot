@@ -106,7 +106,7 @@ docker exec -it list_am_bot.core bash
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
 
 # Run existing migrations
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 
 # Exit
 exit
@@ -121,13 +121,13 @@ When you modify entities, create a migration:
 make shell
 
 # Generate migration from entity changes
-/opt/typeorm-generate.sh AddUserEmailField
+/tmp/typeorm-generate.sh AddUserEmailField
 
 # Review generated migration in:
 # src/infrastructure/database/migrations/
 
 # Apply migration
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 
 # Exit
 exit
@@ -137,17 +137,17 @@ exit
 
 ```bash
 # Inside container
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 
 # Or from host
-docker exec -it list_am_bot.core /opt/typeorm-migrate.sh
+docker exec -it list_am_bot.core /tmp/typeorm-migrate.sh
 ```
 
 ### Reverting Migrations
 
 ```bash
 # Revert last migration
-docker exec -it list_am_bot.core /opt/typeorm-revert.sh
+docker exec -it list_am_bot.core /tmp/typeorm-revert.sh
 
 # Revert multiple migrations
 # Run the command multiple times
@@ -217,8 +217,8 @@ If you modified entities:
 ```bash
 # Generate migration
 make shell
-/opt/typeorm-generate.sh MigrationName
-/opt/typeorm-migrate.sh
+/tmp/typeorm-generate.sh MigrationName
+/tmp/typeorm-migrate.sh
 exit
 
 # Restart
@@ -379,7 +379,7 @@ make up
 # Recreate schemas and run migrations
 make shell
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 exit
 ```
 
@@ -420,6 +420,63 @@ docker stats list_am_bot.core
 # View memory usage
 docker exec -it list_am_bot.core node -e "console.log(process.memoryUsage())"
 ```
+
+### Monitoring Metrics
+
+The bot automatically collects performance metrics in the database:
+
+```bash
+# Connect to database
+make db-shell
+
+# View scraping performance
+SELECT type, AVG(value) as avg_duration, COUNT(*) as count
+FROM core.metric
+WHERE type = 'scrape_duration'
+GROUP BY type;
+
+# View notification success rate
+SELECT
+  SUM(CASE WHEN type = 'notification_success' THEN 1 ELSE 0 END) as success,
+  SUM(CASE WHEN type = 'notification_failure' THEN 1 ELSE 0 END) as failure,
+  ROUND(100.0 * SUM(CASE WHEN type = 'notification_success' THEN 1 ELSE 0 END) /
+    NULLIF(COUNT(*), 0), 2) as success_rate
+FROM core.metric
+WHERE type IN ('notification_success', 'notification_failure');
+
+# View recent queue sizes
+SELECT value as queue_size, created_at
+FROM core.metric
+WHERE type = 'queue_size'
+ORDER BY created_at DESC
+LIMIT 10;
+
+# View active subscriptions over time
+SELECT value as subscriptions, created_at
+FROM core.metric
+WHERE type = 'active_subscriptions'
+ORDER BY created_at DESC
+LIMIT 10;
+```
+
+**Metrics Architecture:**
+
+- `MetricsService` — Application layer service for recording metrics
+- `MetricRepository` — Infrastructure layer for database operations
+- `MetricEntity` — Domain entity representing a metric
+- `MetricsReportService` — Application layer service for generating reports
+- `MetricsReportSchedulerService` — Infrastructure cron job for daily reports
+- All metrics are saved asynchronously with error handling to avoid performance impact
+
+**Daily Reports:**
+
+Automated daily metrics reports are sent to the admin (if configured) at 9:00 AM. The report includes:
+
+- Performance metrics for last 24 hours, 7 days, and 30 days
+- Scraping duration, notification success rate, queue size, active subscriptions
+- Formatted message with HTML for easy reading in Telegram
+
+To receive reports, set `BOT_INCIDENTS_USER_ID` in `.env` file.
 
 ---
 
@@ -506,11 +563,11 @@ docker exec -it list_am_bot.core printenv | grep POSTGRES
 ### Database Changes
 
 1. ✅ Modify entity
-2. ✅ Generate migration: `/opt/typeorm-generate.sh`
+2. ✅ Generate migration: tmpopt/typeorm-generate.sh`
 3. ✅ Review migration file
-4. ✅ Test migration: `/opt/typeorm-migrate.sh`
-5. ✅ Test rollback: `/opt/typeorm-revert.sh`
-6. ✅ Re-apply: `/opt/typeorm-migrate.sh`
+4. ✅ Test migration: tmpopt/typeorm-migrate.sh`
+5. ✅ Test rollback: tmpopt/typeorm-revert.sh`
+6. ✅ Re-apply: tmpopt/typeorm-migrate.sh`
 7. ✅ Commit entity AND migration
 
 ### Before Committing

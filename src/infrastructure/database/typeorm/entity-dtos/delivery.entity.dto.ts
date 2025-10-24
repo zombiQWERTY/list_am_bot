@@ -35,6 +35,7 @@ export class DeliveryEntityDto implements DeliveryEntity {
   @ManyToOne(
     (): typeof UserEntityDto => UserEntityDto,
     (user): DeliveryEntityDto[] | undefined => user.deliveries,
+    { onDelete: 'CASCADE' },
   )
   user?: UserEntityDto;
 }

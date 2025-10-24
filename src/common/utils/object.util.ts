@@ -1,7 +1,3 @@
-/**
- * Assigns only defined properties from source to target
- * Skips properties that are undefined in the source
- */
 export function assignDefinedProps<
   Target extends object,
   Source extends Partial<Target>,

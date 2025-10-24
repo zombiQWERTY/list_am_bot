@@ -117,4 +117,24 @@ export class BotMessages {
   lastCommandResult(query: string, count: number): string {
     return `🔍 <b>Результаты поиска</b> по запросу: "${escapeHtml(query)}"\n\nНайдено: ${count} объявлений\n\nПоказываю последнее:`;
   }
+
+  searchError(error: string): string {
+    return `❌ Ошибка поиска: ${error}`;
+  }
+
+  invalidFormat(): string {
+    return '❌ Неверный формат';
+  }
+
+  subscriptionDeleted(): string {
+    return '✅ Подписка удалена';
+  }
+
+  deleteError(): string {
+    return '❌ Ошибка при удалении подписки';
+  }
+
+  openOnListAm(): string {
+    return '🔗 Открыть на list.am';
+  }
 }

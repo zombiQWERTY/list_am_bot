@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
+import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { NotificationService } from '@list-am-bot/application/notification/notification.service';
 import {
   ScrapeQueueService,
@@ -24,6 +25,7 @@ export class ScrapeWorkerService {
     private readonly notificationService: NotificationService,
     private readonly configService: ConfigService,
     private readonly scrapeQueue: ScrapeQueueService,
+    private readonly metricsService: MetricsService,
   ) {
     this.requestDelayMs = this.configService.get<number>(
       'requestDelayMs',
@@ -93,6 +95,7 @@ export class ScrapeWorkerService {
       let totalNewListings = 0;
       let totalRequests = 0;
       let totalErrors = 0;
+      let totalActiveSubscriptions = 0;
 
       for (const user of activeUsers) {
         try {
@@ -102,6 +105,8 @@ export class ScrapeWorkerService {
           if (subscriptions.length === 0) {
             continue;
           }
+
+          totalActiveSubscriptions += subscriptions.length;
 
           this.logger.debug(
             `Processing ${subscriptions.length} subscriptions for user ${user.telegramUserId}`,
@@ -160,10 +165,15 @@ export class ScrapeWorkerService {
         }
       }
 
+      await this.metricsService.recordActiveSubscriptions(
+        totalActiveSubscriptions,
+      );
+
       const duration = Date.now() - startTime;
       this.logger.debug(
         `Scrape cycle completed in ${duration}ms. ` +
-          `Requests: ${totalRequests}, New listings: ${totalNewListings}, Errors: ${totalErrors}`,
+          `Requests: ${totalRequests}, New listings: ${totalNewListings}, ` +
+          `Active subscriptions: ${totalActiveSubscriptions}, Errors: ${totalErrors}`,
       );
     } catch (error) {
       this.logger.error('Fatal error in scrape cycle:', error);

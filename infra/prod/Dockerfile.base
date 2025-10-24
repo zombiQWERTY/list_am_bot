@@ -1,6 +1,8 @@
 FROM node:20-alpine
 WORKDIR /usr/src/app
 
+COPY ./.husky/install.mjs ./.husky/install.mjs
+
 COPY ./package.json .
 COPY ./package-lock.json .
 

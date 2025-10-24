@@ -64,7 +64,7 @@ docker exec -it list_am_bot.core bash
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
 
 # Run migrations
-/opt/typeorm-migrate.sh
+/tmp/typeorm-migrate.sh
 
 # Exit container
 exit

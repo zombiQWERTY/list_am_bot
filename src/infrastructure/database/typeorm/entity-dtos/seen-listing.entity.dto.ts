@@ -31,6 +31,7 @@ export class SeenListingEntityDto implements SeenListingEntity {
     (): typeof SubscriptionEntityDto => SubscriptionEntityDto,
     (subscription): SeenListingEntityDto[] | undefined =>
       subscription.seenListings,
+    { onDelete: 'CASCADE' },
   )
   subscription?: SubscriptionEntityDto;
 }

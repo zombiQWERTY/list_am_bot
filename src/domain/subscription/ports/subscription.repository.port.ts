@@ -20,11 +20,7 @@ export interface ISubscriptionRepository {
 
   delete(id: number): Promise<void>;
 
-  deleteWithSeenListings(subscriptionId: number): Promise<void>;
-
   deleteAllByUserId(userId: number): Promise<void>;
-
-  deleteAllWithSeenListings(userId: number): Promise<void>;
 
   count(userId: number): Promise<number>;
 }

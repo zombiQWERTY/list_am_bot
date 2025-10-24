@@ -1,13 +1,14 @@
 FROM node:20-alpine AS builder
 WORKDIR /usr/src/app
 
+COPY ./.husky/install.mjs ./.husky/install.mjs
+
 COPY ./package.json .
 COPY ./package-lock.json .
 COPY ./webpack.config.js .
 COPY ./nest-cli.json .
 COPY ./tsconfig.json .
 COPY ./tsconfig.build.json .
-COPY ./servers.json .
 
 COPY ./infra/dev/ /tmp/
 
