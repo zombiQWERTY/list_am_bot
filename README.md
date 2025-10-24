@@ -6,13 +6,57 @@
 
 [![NestJS](https://img.shields.io/badge/NestJS-11.x-E0234E?style=for-the-badge&logo=nestjs)](https://nestjs.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-20.x-339933?style=for-the-badge&logo=node.js)](https://nodejs.org/)
 [![Telegraf](https://img.shields.io/badge/Telegraf-4.16-2CA5E0?style=for-the-badge&logo=telegram)](https://telegraf.js.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql)](https://www.postgresql.org/)
-[![License](https://img.shields.io/badge/License-WTFPL-green?style=for-the-badge)](LICENSE)
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Development](#-development) • [Troubleshooting](#-troubleshooting)
+[![Dependabot](https://img.shields.io/badge/Dependabot-enabled-025E8C?style=for-the-badge&logo=dependabot)](https://github.com/zombiQWERTY/list_am_bot/network/updates)
+
+[![License](https://img.shields.io/badge/License-WTFPL-green?style=for-the-badge)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=for-the-badge)](https://github.com/zombiQWERTY/list_am_bot/pulls)
+[![Telegram](https://img.shields.io/badge/Telegram-@zinovev__space-2CA5E0?style=for-the-badge&logo=telegram)](https://t.me/zinovev_space)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/zinovev_space)
+[![Sponsor](https://img.shields.io/badge/Sponsor-💝-ff69b4?style=for-the-badge)](#-support-the-project)
+
+[Features](#-features) • [Quick Start](#-quick-start) • [Architecture](#-architecture) • [Development](#-development) • [Support](#-support-the-project)
 
 📚 **Documentation:** [Quick Start](QUICK_START.md) • [Development Guide](DEVELOPMENT.md) • [CI/CD Setup](CICD.md) • [Contributing](CONTRIBUTING.md) • [Changelog](CHANGELOG.md)
+
+</div>
+
+---
+
+## 💝 Support the Project
+
+If you find this bot useful and want to support its development:
+
+<div align="center">
+
+### ⭐ Star the Repository
+
+Give this project a star on GitHub — it helps others discover it!
+
+### 💰 Financial Support
+
+Your donations help maintain and improve the bot:
+
+| Method                      | Details                                                                  |
+| --------------------------- | ------------------------------------------------------------------------ |
+| **Buy Me a Coffee** ☕      | [buymeacoffee.com/zinovev_space](https://buymeacoffee.com/zinovev_space) |
+| **USDT (TRC20)**            | `TTxEjq3w2jy1bgRSsrvwXhZB2VaKfkureh`                                     |
+| **Armenian Visa (ID Bank)** | `4318270001094190`                                                       |
+| **Russian MIR (T-Bank)**    | `2200700167792802`                                                       |
+
+### 🤝 Become a Sponsor
+
+Interested in sponsoring this project? Let's talk!
+
+- Regular feature updates
+- Priority support
+- Your logo in README
+- Custom integrations
+
+Contact via [GitHub Discussions](https://github.com/zombiQWERTY/list_am_bot/discussions) or [Telegram](https://t.me/zinovev_space)
 
 </div>
 
@@ -45,6 +89,8 @@ List.am Bot is a powerful Telegram bot that helps you never miss important deals
   - View active subscriptions with type indicators
   - Delete individual or all subscriptions
   - Named subscriptions for better organization
+  - **User subscription limit: 10 subscriptions per user**
+  - **Automatic cleanup when user blocks the bot**
 
 - **🔍 Intelligent Scraping**
   - HTML parsing with Cheerio
@@ -249,6 +295,76 @@ FLARESOLVERR_MAX_TIMEOUT=60000
 
 ---
 
+## 📋 User Limits & Policies
+
+### Subscription Limits
+
+To ensure optimal performance and fair resource allocation, each user is limited to:
+
+- **Maximum 10 active subscriptions per user**
+
+When attempting to create an 11th subscription, users will receive a friendly message:
+
+```
+❌ Достигнут лимит подписок: 10
+
+Удалите ненужные подписки, чтобы добавить новые.
+```
+
+**Why this limit?**
+
+- Prevents resource abuse
+- Ensures consistent bot performance for all users
+- Encourages focused, relevant subscriptions
+- Maintains database efficiency
+
+### Automatic Cleanup on Bot Block
+
+The bot implements smart cleanup to respect user privacy and maintain data hygiene:
+
+**What happens when a user blocks the bot:**
+
+1. ✅ Bot detects block during notification attempt (HTTP 403 error)
+2. ✅ Automatically finds all user's subscriptions
+3. ✅ Deletes all subscriptions for that user
+4. ✅ Logs cleanup action for monitoring
+5. ✅ No notifications will be sent to blocked users
+
+**Benefits:**
+
+- **Privacy-friendly** — Data is removed when relationship ends
+- **Resource efficient** — No wasted processing for blocked users
+- **GDPR compliant** — Automatic data removal on user action
+- **Clean database** — No orphaned subscriptions
+
+**Implementation Details:**
+
+```typescript
+// When bot is blocked (403 error)
+if (isTelegramBotBlocked(error)) {
+  // Find user and their subscriptions
+  const user = await userService.findByTelegramUserId(telegramUserId);
+  const count = await subscriptionService.count(user.id);
+
+  // Clean up all subscriptions
+  if (count > 0) {
+    await subscriptionService.deleteAll(user.id);
+    logger.debug(`Cleaned up ${count} subscription(s) for blocked user`);
+  }
+}
+```
+
+**User Experience:**
+
+- Silent cleanup — no errors thrown
+- Happens automatically on next notification attempt
+- User can restart with `/start` if they unblock the bot later
+- Fresh start — all previous subscriptions are removed
+
+> **Note:** Users will need to recreate their subscriptions if they unblock the bot in the future.
+
+---
+
 ## 🚀 Quick Start
 
 > **📖 For detailed step-by-step instructions, see [QUICK_START.md](QUICK_START.md)**
@@ -436,12 +552,31 @@ URL subscriptions are displayed with a 🔗 icon and their custom name:
 3. 🔗 Electronics in Avan       [🗑]
 ```
 
+### Subscription Limits
+
+Each user can create up to **10 subscriptions** (text + URL combined):
+
+```
+📊 Your subscription usage: 7/10
+
+✅ 3 more subscriptions available
+❌ At limit — delete old subscriptions to add new ones
+```
+
+**To free up slots:**
+
+1. Use `/list` or click "📋 Список отслеживаемых"
+2. Click 🗑 next to unwanted subscription
+3. Create new subscriptions
+
 ### Tips
 
+- **Maximum 10 subscriptions per user** to ensure optimal performance
 - **URL subscriptions** must be from `list.am` domain only
 - Names help identify URL subscriptions at a glance
 - You can have both text and URL subscriptions simultaneously
 - Notifications include the subscription name/query for context
+- **Subscriptions auto-delete if you block the bot** — restart fresh by unblocking and using `/start`
 
 ---
 
@@ -449,23 +584,23 @@ URL subscriptions are displayed with a 🔗 icon and their custom name:
 
 ### Environment Variables
 
-| Variable                       | Description                               | Default                 | Required |
-| ------------------------------ | ----------------------------------------- | ----------------------- | -------- |
-| `BOT_TOKEN`                    | Telegram Bot API token                    | -                       | ✅       |
-| `BOT_INCIDENTS_USER_ID`        | Admin Telegram ID for error notifications | -                       | ✅       |
-| `BOT_DOMAIN`                   | Domain for webhook (production)           | -                       | ❌       |
-| `BOT_WEBHOOK_URL`              | Webhook path                              | `/telegram-webhook`     | ❌       |
-| `POSTGRES_HOST`                | PostgreSQL host                           | `localhost`             | ✅       |
-| `POSTGRES_PORT`                | PostgreSQL port                           | `5432`                  | ✅       |
-| `POSTGRES_USERNAME`            | Database user                             | -                       | ✅       |
-| `POSTGRES_PASSWORD`            | Database password                         | -                       | ✅       |
-| `POSTGRES_NAME`                | Database name                             | `list_am_bot`           | ✅       |
-| `POSTGRES_TELEGRAF_SCHEMA`     | Schema for Telegraf sessions              | `public`                | ❌       |
-| `NODE_ENV`                     | Environment mode                          | `development`           | ❌       |
-| `FETCH_TIMEOUT_MS`             | HTTP request timeout (ms)                 | `15000`                 | ❌       |
-| `FLARESOLVERR_URL`             | FlareSolverr service URL                  | `http://localhost:8191` | ✅       |
-| `FLARESOLVERR_PORT`            | FlareSolverr service port                 | `8191`                  | ✅       |
-| `FLARESOLVERR_MAX_TIMEOUT`     | FlareSolverr timeout (ms)                 | `60000`                 | ❌       |
+| Variable                   | Description                               | Default                 | Required |
+| -------------------------- | ----------------------------------------- | ----------------------- | -------- |
+| `BOT_TOKEN`                | Telegram Bot API token                    | -                       | ✅       |
+| `BOT_INCIDENTS_USER_ID`    | Admin Telegram ID for error notifications | -                       | ✅       |
+| `BOT_DOMAIN`               | Domain for webhook (production)           | -                       | ❌       |
+| `BOT_WEBHOOK_URL`          | Webhook path                              | `/telegram-webhook`     | ❌       |
+| `POSTGRES_HOST`            | PostgreSQL host                           | `localhost`             | ✅       |
+| `POSTGRES_PORT`            | PostgreSQL port                           | `5432`                  | ✅       |
+| `POSTGRES_USERNAME`        | Database user                             | -                       | ✅       |
+| `POSTGRES_PASSWORD`        | Database password                         | -                       | ✅       |
+| `POSTGRES_NAME`            | Database name                             | `list_am_bot`           | ✅       |
+| `POSTGRES_TELEGRAF_SCHEMA` | Schema for Telegraf sessions              | `public`                | ❌       |
+| `NODE_ENV`                 | Environment mode                          | `development`           | ❌       |
+| `FETCH_TIMEOUT_MS`         | HTTP request timeout (ms)                 | `15000`                 | ❌       |
+| `FLARESOLVERR_URL`         | FlareSolverr service URL                  | `http://localhost:8191` | ✅       |
+| `FLARESOLVERR_PORT`        | FlareSolverr service port                 | `8191`                  | ✅       |
+| `FLARESOLVERR_MAX_TIMEOUT` | FlareSolverr timeout (ms)                 | `60000`                 | ❌       |
 
 ### FlareSolverr (Optional)
 
@@ -725,8 +860,8 @@ This project is licensed under the WTFPL (Do What The Fuck You Want To Public Li
 
 For questions, suggestions, or issues, please:
 
-- Open an [issue](https://github.com/yourusername/list_am_bot/issues)
-- Start a [discussion](https://github.com/yourusername/list_am_bot/discussions)
+- Open an [issue](https://github.com/zombiQWERTY/list_am_bot/issues)
+- Start a [discussion](https://github.com/zombiQWERTY/list_am_bot/discussions)
 
 ---
 
@@ -735,5 +870,7 @@ For questions, suggestions, or issues, please:
 **Made with ❤️ and TypeScript**
 
 If you find this project useful, please give it a ⭐️
+
+**Every contribution counts! Thank you for your support! 🙏**
 
 </div>

@@ -9,6 +9,7 @@ import { UserService } from '@list-am-bot/application/user/user.service';
 import {
   DuplicateSubscriptionException,
   InvalidQueryException,
+  MaxSubscriptionsReachedException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import { TelegrafExceptionFilter } from '@list-am-bot/common/filters/telegraf-exception.filter';
 import { BotContext } from '@list-am-bot/context/context.interface';
@@ -134,7 +135,14 @@ export class AddSubscriptionScene {
     error: unknown,
     query: string,
   ): Promise<void> {
-    if (error instanceof DuplicateSubscriptionException) {
+    if (error instanceof MaxSubscriptionsReachedException) {
+      await ctx.reply(this.messages.maxSubscriptionsReached(10), {
+        parse_mode: 'HTML',
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
+    } else if (error instanceof DuplicateSubscriptionException) {
       await ctx.reply(this.messages.duplicateSubscription(query), {
         reply_markup: {
           remove_keyboard: true,

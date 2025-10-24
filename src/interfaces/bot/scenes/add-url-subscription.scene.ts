@@ -8,6 +8,7 @@ import { UserService } from '@list-am-bot/application/user/user.service';
 import {
   DuplicateSubscriptionException,
   InvalidQueryException,
+  MaxSubscriptionsReachedException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import { TelegrafExceptionFilter } from '@list-am-bot/common/filters/telegraf-exception.filter';
 import { ListAmUrlUtil } from '@list-am-bot/common/utils/list-am-url.util';
@@ -172,7 +173,14 @@ export class AddUrlSubscriptionScene {
     error: unknown,
     url: string,
   ): Promise<void> {
-    if (error instanceof DuplicateSubscriptionException) {
+    if (error instanceof MaxSubscriptionsReachedException) {
+      await ctx.reply(this.messages.maxSubscriptionsReached(10), {
+        parse_mode: 'HTML',
+        reply_markup: {
+          remove_keyboard: true,
+        },
+      });
+    } else if (error instanceof DuplicateSubscriptionException) {
       await ctx.reply(this.messages.duplicateUrlSubscription(url), {
         reply_markup: {
           remove_keyboard: true,

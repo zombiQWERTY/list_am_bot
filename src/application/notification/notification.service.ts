@@ -3,6 +3,7 @@ import { InjectBot } from 'nestjs-telegraf';
 import { Context, Telegraf } from 'telegraf';
 
 import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
+import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
 import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
@@ -30,6 +31,7 @@ export class NotificationService {
     @Inject(DeliveryRepositoryPort)
     private readonly deliveryRepository: IDeliveryRepository,
     private readonly userService: UserService,
+    private readonly subscriptionService: SubscriptionService,
     private readonly metricsService: MetricsService,
   ) {
     // Telegram API limit: 30 messages per second globally
@@ -126,15 +128,19 @@ export class NotificationService {
         payload.listing.id,
         error instanceof Error ? error.message : 'Unknown error',
       );
-      this.handleTelegramError(error, payload.userTelegramId);
+      await this.handleTelegramError(error, payload.userTelegramId);
     }
   }
 
-  private handleTelegramError(error: unknown, telegramUserId: number): void {
+  private async handleTelegramError(
+    error: unknown,
+    telegramUserId: number,
+  ): Promise<void> {
     if (isTelegramBotBlocked(error)) {
       this.logger.debug(
-        `User ${telegramUserId} blocked the bot. Skipping notification.`,
+        `User ${telegramUserId} blocked the bot. Cleaning up subscriptions...`,
       );
+      await this.handleBlockedUser(telegramUserId);
       return;
     }
 
@@ -150,5 +156,36 @@ export class NotificationService {
     }
 
     throw error;
+  }
+
+  private async handleBlockedUser(telegramUserId: number): Promise<void> {
+    try {
+      const user = await this.userService.findByTelegramUserId(telegramUserId);
+
+      if (!user) {
+        this.logger.debug(
+          `User ${telegramUserId} not found in database, nothing to clean up`,
+        );
+        return;
+      }
+
+      const subscriptionCount = await this.subscriptionService.count(user.id);
+
+      if (subscriptionCount > 0) {
+        await this.subscriptionService.deleteAll(user.id);
+        this.logger.debug(
+          `✅ Cleaned up ${subscriptionCount} subscription(s) for blocked user ${telegramUserId}`,
+        );
+      } else {
+        this.logger.debug(
+          `User ${telegramUserId} has no subscriptions to clean up`,
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        `Failed to clean up subscriptions for blocked user ${telegramUserId}:`,
+        error,
+      );
+    }
   }
 }

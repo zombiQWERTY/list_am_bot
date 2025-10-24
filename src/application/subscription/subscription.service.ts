@@ -3,6 +3,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import {
   DuplicateSubscriptionException,
   InvalidQueryException,
+  MaxSubscriptionsReachedException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import { ListAmUrlUtil } from '@list-am-bot/common/utils/list-am-url.util';
 import {
@@ -18,6 +19,7 @@ import {
 export class SubscriptionService {
   private static readonly MAX_QUERY_LENGTH = 500;
   private static readonly MIN_QUERY_LENGTH = 1;
+  private static readonly MAX_SUBSCRIPTIONS_PER_USER = 10;
 
   constructor(
     @Inject(SubscriptionRepositoryPort)
@@ -27,6 +29,7 @@ export class SubscriptionService {
   async create(userId: number, query: string): Promise<SubscriptionEntity> {
     const trimmedQuery = query.trim();
 
+    await this.checkSubscriptionLimit(userId);
     this.validateQuery(trimmedQuery);
 
     const exists = await this.subscriptionRepository.exists(
@@ -51,6 +54,8 @@ export class SubscriptionService {
     url: string,
     name: string,
   ): Promise<SubscriptionEntity> {
+    await this.checkSubscriptionLimit(userId);
+
     if (!ListAmUrlUtil.isValidListAmUrl(url)) {
       throw new InvalidQueryException('URL must be from list.am domain');
     }
@@ -101,6 +106,16 @@ export class SubscriptionService {
 
   async count(userId: number): Promise<number> {
     return this.subscriptionRepository.count(userId);
+  }
+
+  private async checkSubscriptionLimit(userId: number): Promise<void> {
+    const currentCount = await this.subscriptionRepository.count(userId);
+
+    if (currentCount >= SubscriptionService.MAX_SUBSCRIPTIONS_PER_USER) {
+      throw new MaxSubscriptionsReachedException(
+        `Maximum number of subscriptions reached (${SubscriptionService.MAX_SUBSCRIPTIONS_PER_USER})`,
+      );
+    }
   }
 
   private validateQuery(query: string): void {

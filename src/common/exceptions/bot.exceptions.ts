@@ -29,3 +29,9 @@ export class ScraperException extends HttpException {
     super(`Scraper error: ${message}`, HttpStatus.INTERNAL_SERVER_ERROR);
   }
 }
+
+export class MaxSubscriptionsReachedException extends HttpException {
+  constructor(message: string) {
+    super(message, HttpStatus.FORBIDDEN);
+  }
+}

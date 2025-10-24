@@ -6,6 +6,7 @@ import { SubscriptionService } from '@list-am-bot/application/subscription/subsc
 import {
   DuplicateSubscriptionException,
   InvalidQueryException,
+  MaxSubscriptionsReachedException,
 } from '@list-am-bot/common/exceptions/bot.exceptions';
 import {
   SubscriptionRepositoryPort,
@@ -60,6 +61,7 @@ describe('SubscriptionService', (): void => {
         updatedAt: mockDate,
       });
 
+      subscriptionRepository.count.mockResolvedValue(5);
       subscriptionRepository.exists.mockResolvedValue(false);
       subscriptionRepository.create.mockResolvedValue(mockSubscription);
     });
@@ -152,6 +154,44 @@ describe('SubscriptionService', (): void => {
 
     it('should accept query with 1 character', async (): Promise<void> => {
       await service.create(1, 'a');
+
+      expect(subscriptionRepository.create).toHaveBeenCalled();
+    });
+
+    it('should check subscription limit before creating', async (): Promise<void> => {
+      await service.create(1, 'test query');
+
+      expect(subscriptionRepository.count).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw MaxSubscriptionsReachedException when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(service.create(1, 'test query')).rejects.toThrow(
+        MaxSubscriptionsReachedException,
+      );
+    });
+
+    it('should not check existence when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(service.create(1, 'test query')).rejects.toThrow();
+
+      expect(subscriptionRepository.exists).not.toHaveBeenCalled();
+    });
+
+    it('should not create subscription when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(service.create(1, 'test query')).rejects.toThrow();
+
+      expect(subscriptionRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow creating subscription at exactly limit - 1', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(9);
+
+      await service.create(1, 'test query');
 
       expect(subscriptionRepository.create).toHaveBeenCalled();
     });
@@ -318,6 +358,147 @@ describe('SubscriptionService', (): void => {
       const result = await service.count(1);
 
       expect(result).toBe(0);
+    });
+  });
+
+  describe('createFromUrl', (): void => {
+    let mockSubscription: SubscriptionEntity;
+
+    beforeEach((): void => {
+      mockSubscription = new SubscriptionEntity({
+        id: 1,
+        userId: 1,
+        query: 'https://www.list.am/category/123',
+        name: 'My URL Sub',
+        type: SubscriptionType.URL,
+        isActive: true,
+        createdAt: mockDate,
+        updatedAt: mockDate,
+      });
+
+      subscriptionRepository.count.mockResolvedValue(5);
+      subscriptionRepository.exists.mockResolvedValue(false);
+      subscriptionRepository.create.mockResolvedValue(mockSubscription);
+    });
+
+    it('should check subscription limit before creating', async (): Promise<void> => {
+      await service.createFromUrl(
+        1,
+        'https://www.list.am/category/123',
+        'My URL Sub',
+      );
+
+      expect(subscriptionRepository.count).toHaveBeenCalledWith(1);
+    });
+
+    it('should throw MaxSubscriptionsReachedException when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://www.list.am/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow(MaxSubscriptionsReachedException);
+    });
+
+    it('should not validate URL when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://www.list.am/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow(MaxSubscriptionsReachedException);
+    });
+
+    it('should not check existence when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://www.list.am/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow();
+
+      expect(subscriptionRepository.exists).not.toHaveBeenCalled();
+    });
+
+    it('should not create subscription when limit reached', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(10);
+
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://www.list.am/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow();
+
+      expect(subscriptionRepository.create).not.toHaveBeenCalled();
+    });
+
+    it('should allow creating URL subscription at exactly limit - 1', async (): Promise<void> => {
+      subscriptionRepository.count.mockResolvedValue(9);
+
+      await service.createFromUrl(
+        1,
+        'https://www.list.am/category/123',
+        'My URL Sub',
+      );
+
+      expect(subscriptionRepository.create).toHaveBeenCalled();
+    });
+
+    it('should create URL subscription with valid inputs', async (): Promise<void> => {
+      const result = await service.createFromUrl(
+        1,
+        'https://www.list.am/category/123',
+        'My URL Sub',
+      );
+
+      expect(result).toStrictEqual(mockSubscription);
+    });
+
+    it('should throw InvalidQueryException for invalid URL domain', async (): Promise<void> => {
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://example.com/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow(InvalidQueryException);
+    });
+
+    it('should throw InvalidQueryException for too short name', async (): Promise<void> => {
+      await expect(
+        service.createFromUrl(1, 'https://www.list.am/category/123', 'ab'),
+      ).rejects.toThrow(InvalidQueryException);
+    });
+
+    it('should throw InvalidQueryException for too long name', async (): Promise<void> => {
+      const longName = 'a'.repeat(101);
+
+      await expect(
+        service.createFromUrl(1, 'https://www.list.am/category/123', longName),
+      ).rejects.toThrow(InvalidQueryException);
+    });
+
+    it('should throw DuplicateSubscriptionException if URL subscription exists', async (): Promise<void> => {
+      subscriptionRepository.exists.mockResolvedValue(true);
+
+      await expect(
+        service.createFromUrl(
+          1,
+          'https://www.list.am/category/123',
+          'My URL Sub',
+        ),
+      ).rejects.toThrow(DuplicateSubscriptionException);
     });
   });
 });

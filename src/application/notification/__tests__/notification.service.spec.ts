@@ -6,6 +6,7 @@ import { Context, Telegraf } from 'telegraf';
 
 import { MetricsService } from '@list-am-bot/application/monitoring/metrics.service';
 import { NotificationService } from '@list-am-bot/application/notification/notification.service';
+import { SubscriptionService } from '@list-am-bot/application/subscription/subscription.service';
 import { UserService } from '@list-am-bot/application/user/user.service';
 import { ListingMessageFormatter } from '@list-am-bot/common/formatters/listing-message.formatter';
 import { ListingKeyboard } from '@list-am-bot/common/keyboards/listing.keyboard';
@@ -40,12 +41,14 @@ describe('NotificationService', (): void => {
   let bot: DeepMockProxy<Telegraf<Context>>;
   let deliveryRepository: DeepMockProxy<IDeliveryRepository>;
   let userService: DeepMockProxy<UserService>;
+  let subscriptionService: DeepMockProxy<SubscriptionService>;
   let metricsService: DeepMockProxy<MetricsService>;
 
   beforeEach(async (): Promise<void> => {
     bot = mockDeep<Telegraf<Context>>();
     deliveryRepository = mockDeep<IDeliveryRepository>();
     userService = mockDeep<UserService>();
+    subscriptionService = mockDeep<SubscriptionService>();
     metricsService = mockDeep<MetricsService>();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -62,6 +65,10 @@ describe('NotificationService', (): void => {
         {
           provide: UserService,
           useValue: userService,
+        },
+        {
+          provide: SubscriptionService,
+          useValue: subscriptionService,
         },
         {
           provide: MetricsService,
@@ -362,6 +369,140 @@ describe('NotificationService', (): void => {
       await expect(
         service.sendListingNotification(payload),
       ).resolves.toBeUndefined();
+    });
+
+    it('should delete all subscriptions when bot is blocked by user', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(3);
+      subscriptionService.deleteAll.mockResolvedValue(undefined);
+
+      await service.sendListingNotification(payload);
+
+      expect(userService.findByTelegramUserId).toHaveBeenCalledWith(
+        payload.userTelegramId,
+      );
+    });
+
+    it('should call subscriptionService.count when bot is blocked', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(5);
+      subscriptionService.deleteAll.mockResolvedValue(undefined);
+
+      await service.sendListingNotification(payload);
+
+      expect(subscriptionService.count).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should call subscriptionService.deleteAll when bot is blocked and user has subscriptions', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(5);
+      subscriptionService.deleteAll.mockResolvedValue(undefined);
+
+      await service.sendListingNotification(payload);
+
+      expect(subscriptionService.deleteAll).toHaveBeenCalledWith(mockUser.id);
+    });
+
+    it('should not call deleteAll when bot is blocked but user has no subscriptions', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(0);
+
+      await service.sendListingNotification(payload);
+
+      expect(subscriptionService.deleteAll).not.toHaveBeenCalled();
+    });
+
+    it('should not throw when user not found in database during cleanup', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      userService.findByTelegramUserId.mockResolvedValueOnce(mockUser);
+      userService.findByTelegramUserId.mockResolvedValueOnce(null);
+
+      await expect(
+        service.sendListingNotification(payload),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should not throw when cleanup fails', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        service.sendListingNotification(payload),
+      ).resolves.toBeUndefined();
+    });
+
+    it('should log debug when user blocked the bot', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(2);
+      subscriptionService.deleteAll.mockResolvedValue(undefined);
+
+      await service.sendListingNotification(payload);
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('blocked the bot'),
+      );
+    });
+
+    it('should log debug when subscriptions cleaned up', async (): Promise<void> => {
+      const botBlockedError = {
+        response: {
+          error_code: 403,
+          description: 'Forbidden: bot was blocked by the user',
+        },
+      };
+      const debugSpy = jest.spyOn(Logger.prototype, 'debug');
+      bot.telegram.sendMessage.mockRejectedValue(botBlockedError);
+      subscriptionService.count.mockResolvedValue(3);
+      subscriptionService.deleteAll.mockResolvedValue(undefined);
+
+      await service.sendListingNotification(payload);
+
+      expect(debugSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Cleaned up 3 subscription'),
+      );
     });
   });
 });

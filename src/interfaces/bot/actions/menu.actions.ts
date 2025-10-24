@@ -42,18 +42,38 @@ export class MenuActions {
 
     if (subscriptions.length === 0) {
       await ctx.answerCbQuery();
-      await ctx.editMessageText(this.messages.noSubscriptions(), {
-        reply_markup: this.keyboards.mainMenu(),
-      });
+      try {
+        await ctx.editMessageText(this.messages.noSubscriptions(), {
+          reply_markup: this.keyboards.mainMenu(),
+        });
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes('message is not modified')
+        ) {
+          return;
+        }
+        throw error;
+      }
       return;
     }
 
     const keyboard = this.keyboards.subscriptionList(subscriptions);
     await ctx.answerCbQuery();
-    await ctx.editMessageText(
-      this.messages.subscriptionsList(subscriptions.length),
-      { reply_markup: keyboard },
-    );
+    try {
+      await ctx.editMessageText(
+        this.messages.subscriptionsList(subscriptions.length),
+        { reply_markup: keyboard },
+      );
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('message is not modified')
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 
   @Action('menu:add')
@@ -71,9 +91,19 @@ export class MenuActions {
   @Action('menu:clear')
   async confirmClear(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
-    await ctx.editMessageText(this.messages.confirmClear(), {
-      reply_markup: this.keyboards.confirmClear(),
-    });
+    try {
+      await ctx.editMessageText(this.messages.confirmClear(), {
+        reply_markup: this.keyboards.confirmClear(),
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('message is not modified')
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 
   @Action('clear:yes')
@@ -101,9 +131,19 @@ export class MenuActions {
   @Action('clear:no')
   async cancelClear(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
-    await ctx.editMessageText(this.messages.menu(), {
-      reply_markup: this.keyboards.mainMenu(),
-    });
+    try {
+      await ctx.editMessageText(this.messages.menu(), {
+        reply_markup: this.keyboards.mainMenu(),
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('message is not modified')
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 
   @Action('menu:pause')
@@ -153,9 +193,19 @@ export class MenuActions {
   @Action('menu:back')
   async backToMenu(@Ctx() ctx: BotContext): Promise<void> {
     await ctx.answerCbQuery();
-    await ctx.editMessageText(this.messages.menu(), {
-      reply_markup: this.keyboards.mainMenu(),
-    });
+    try {
+      await ctx.editMessageText(this.messages.menu(), {
+        reply_markup: this.keyboards.mainMenu(),
+      });
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message.includes('message is not modified')
+      ) {
+        return;
+      }
+      throw error;
+    }
   }
 
   @Action(/^delete:(\d+)$/)

@@ -193,4 +193,8 @@ export class BotMessages {
   duplicateUrlSubscription(url: string): string {
     return `⚠️ Подписка на этот URL уже существует:\n<code>${url}</code>`;
   }
+
+  maxSubscriptionsReached(maxCount: number): string {
+    return `❌ Достигнут лимит подписок: <b>${maxCount}</b>\n\nУдалите ненужные подписки, чтобы добавить новые.`;
+  }
 }

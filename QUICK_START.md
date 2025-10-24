@@ -97,10 +97,23 @@ Your bot is now monitoring list.am for new listings!
 
 ## Next Steps
 
-- **Add subscription:** Use `/add` command in Telegram
+- **Add subscription:** Use `/add` command in Telegram (max 10 per user)
 - **View logs:** `make logs`
 - **Stop bot:** `make down`
 - **Restart bot:** `make restart`
+
+## Important Notes
+
+### User Limits
+
+- Each user can create up to **10 subscriptions** (text + URL combined)
+- When the limit is reached, delete old subscriptions to add new ones
+
+### Privacy & Cleanup
+
+- If you block the bot, all your subscriptions are **automatically deleted**
+- This keeps the database clean and respects your privacy
+- Unblocking the bot allows you to start fresh with new subscriptions
 
 ## Common Commands
 
