@@ -59,6 +59,8 @@ services:
     volumes:
       - ./flaresolver:/config
     restart: unless-stopped
+    networks:
+      - listambot_network
 
   listambot.core:
     image: app_image
