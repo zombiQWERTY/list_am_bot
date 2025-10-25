@@ -366,7 +366,7 @@ describe('AddUrlSubscriptionScene', (): void => {
     });
 
     it('should handle Russian cancel button', async (): Promise<void> => {
-      ctx.message = { text: '❌ Отмена' };
+      ctx.message = { text: 'Отмена' };
 
       await scene.onNameInput(ctx as unknown as WizardContext);
 

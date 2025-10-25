@@ -208,7 +208,7 @@ export class AddUrlSubscriptionScene {
   }
 
   private isCancelCommand(text: string): boolean {
-    return text.toLowerCase() === '/cancel' || text === '❌ Отмена';
+    return text.toLowerCase() === '/cancel' || text.toLowerCase() === 'отмена';
   }
 
   private async leaveScene(ctx: WizardContext): Promise<void> {
