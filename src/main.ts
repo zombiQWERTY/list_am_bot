@@ -12,9 +12,8 @@ import { Telegraf } from 'telegraf';
 import { AppModule } from '@list-am-bot/app.module';
 import { GlobalExceptionsFilter } from '@list-am-bot/common/filters/globalExceptions.filter';
 import { makeLogger } from '@list-am-bot/common/utils/winstonLogger';
-
-import { LIST_AM_BOT } from './constants';
-import { BotContext } from './context/context.interface';
+import { LIST_AM_BOT } from '@list-am-bot/constants';
+import { BotContext } from '@list-am-bot/context/context.interface';
 
 sourceMapInstall();
 
