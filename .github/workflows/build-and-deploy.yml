@@ -105,9 +105,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: list_am_bot
+          POSTGRES_USER: listambot
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: list_am_bot_test
+          POSTGRES_DB: listambot_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -133,9 +133,9 @@ jobs:
             --network host \
             -e POSTGRES_HOST=localhost \
             -e POSTGRES_PORT=5432 \
-            -e POSTGRES_USERNAME=list_am_bot \
+            -e POSTGRES_USERNAME=listambot \
             -e POSTGRES_PASSWORD=password \
-            -e POSTGRES_NAME=list_am_bot_test \
+            -e POSTGRES_NAME=listambot_test \
             -e BOT_TOKEN=test_token \
             -e NODE_ENV=test \
             ${{ needs.build.outputs.base-image }} \

@@ -13,8 +13,8 @@ Step-by-step guide to get List.am Bot running locally in 5 minutes.
 
 ```bash
 # Clone repository
-git clone https://github.com/yourusername/list_am_bot.git
-cd list_am_bot
+git clone https://github.com/zombiQWERTY/list_am_bot.git
+cd listambot
 
 # Create environment file
 cp env.example .env
@@ -57,7 +57,7 @@ If this is your first time running the project:
 
 ```bash
 # Access container
-docker exec -it list_am_bot.core bash
+docker exec -it listambot.core bash
 
 # Create database schemas
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
@@ -139,7 +139,7 @@ make shell           # Access bot container
 ```bash
 # Recreate database
 make down
-docker volume rm list_am_bot_postgres_data
+docker volume rm listambot_postgres_data
 make up
 
 # Then repeat step 4 (create schema)
@@ -159,7 +159,7 @@ Use the correct name in commands.
 
 - Check full [README](README.md)
 - View [Troubleshooting](README.md#-troubleshooting) section
-- Open an [issue](https://github.com/yourusername/list_am_bot/issues)
+- Open an [issue](https://github.com/zombiQWERTY/list_am_bot/issues)
 
 ---
 

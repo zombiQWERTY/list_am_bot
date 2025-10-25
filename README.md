@@ -280,7 +280,7 @@ The scraping system includes multiple layers of resilience:
 
 ```env
 # FlareSolverr connection settings
-FLARESOLVERR_URL=http://list_am_bot.flaresolverr:8191
+FLARESOLVERR_URL=http://listambot.flaresolverr:8191
 FLARESOLVERR_PORT=8191
 FLARESOLVERR_MAX_TIMEOUT=60000
 ```
@@ -372,7 +372,7 @@ if (isTelegramBotBlocked(error)) {
 
    ```bash
    git clone https://github.com/zombiQWERTY/list_am_bot.git
-   cd list_am_bot
+   cd listambot
    ```
 
 2. **Configure environment**
@@ -399,7 +399,7 @@ if (isTelegramBotBlocked(error)) {
 
    ```bash
    # Connect to the database container
-   docker exec -it list_am_bot.app bash
+   docker exec -it listambot.app bash
 
    # Inside container, run psql
    psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
@@ -444,12 +444,12 @@ When adding new npm packages:
 
 ```bash
 # Production environment
-docker build  -t "list_am_bot_base:latest" -f ./infra/prod/Dockerfile.base
+docker build  -t "listambot_base:latest" -f ./infra/prod/Dockerfile.base
 
-docker build -t "list_am_bot_app:latest" -f ./infra/prod/Dockerfile
-    --build-arg="BASE_IMAGE=list_am_bot_base:latest"
+docker build -t "listambot_app:latest" -f ./infra/prod/Dockerfile
+    --build-arg="BASE_IMAGE=listambot_base:latest"
 
-sed -i "s#app_image#list_am_bot_app:latest#g" docker-compose.prod.yml
+sed -i "s#app_image#listambot_app:latest#g" docker-compose.prod.yml
 
 docker compose -f docker-compose.prod.yml pull
 
@@ -586,7 +586,7 @@ Each user can create up to **10 subscriptions** (text + URL combined):
 | `POSTGRES_PORT`            | PostgreSQL port                           | `5432`                  | ✅       |
 | `POSTGRES_USERNAME`        | Database user                             | -                       | ✅       |
 | `POSTGRES_PASSWORD`        | Database password                         | -                       | ✅       |
-| `POSTGRES_NAME`            | Database name                             | `list_am_bot`           | ✅       |
+| `POSTGRES_NAME`            | Database name                             | `listambot`             | ✅       |
 | `POSTGRES_TELEGRAF_SCHEMA` | Schema for Telegraf sessions              | `public`                | ❌       |
 | `NODE_ENV`                 | Environment mode                          | `development`           | ❌       |
 | `FETCH_TIMEOUT_MS`         | HTTP request timeout (ms)                 | `15000`                 | ❌       |
@@ -637,7 +637,7 @@ Migrations in development must be created and run manually:
 
    ```bash
    # Access the container
-   docker exec -it list_am_bot.app bash
+   docker exec -it listambot.app bash
 
    # Inside container
    /tmp/typeorm-generate.sh <migration-name>
@@ -692,7 +692,7 @@ Migrations run **automatically** when the container starts.
 
 ```bash
 # Access container
-docker exec -it list_am_bot.core bash
+docker exec -it listambot.core bash
 
 # Create schemas
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
@@ -744,10 +744,10 @@ make up
 
 ```bash
 # Check if migrations exist
-docker exec -it list_am_bot.core ls -la src/infrastructure/database/migrations/
+docker exec -it listambot.core ls -la src/infrastructure/database/migrations/
 
 # Run migrations manually
-docker exec -it list_am_bot.core /tmp/typeorm-migrate.sh
+docker exec -it listambot.core /tmp/typeorm-migrate.sh
 ```
 
 ### Getting Help

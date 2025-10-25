@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Starting list_am_bot service..."
+echo "Starting listambot service..."
 
 # Start Xvfb for puppeteer (if needed)
 if command -v Xvfb >/dev/null 2>&1; then

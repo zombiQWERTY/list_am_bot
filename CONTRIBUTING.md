@@ -78,7 +78,7 @@ Unsure where to begin? Look for issues labeled:
 ```bash
 # Fork the repository on GitHub, then:
 git clone https://github.com/zombiQWERTY/list_am_bot.git
-cd list_am_bot
+cd listambot
 ```
 
 ### 2. Set Up Environment
@@ -98,7 +98,7 @@ make up
 
 ```bash
 # Access container
-docker exec -it list_am_bot.core bash
+docker exec -it listambot.core bash
 
 # Create schemas
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
@@ -275,7 +275,7 @@ No functional changes, just better separation of concerns.
 
    ```bash
    # Inside container
-   docker exec -it list_am_bot.core npm run build
+   docker exec -it listambot.core npm run build
 
    # Or locally
    npm run build
@@ -285,7 +285,7 @@ No functional changes, just better separation of concerns.
 
    ```bash
    # Inside container
-   docker exec -it list_am_bot.core npm run lint
+   docker exec -it listambot.core npm run lint
 
    # Or locally
    npm run lint
@@ -301,7 +301,7 @@ No functional changes, just better separation of concerns.
 
    ```bash
    # Inside container
-   docker exec -it list_am_bot.core npm run test
+   docker exec -it listambot.core npm run test
 
    # Or locally
    npm run test
@@ -391,8 +391,8 @@ Add screenshots here
 
 ## 🆘 Getting Help
 
-- **Questions?** Open a [discussion](https://github.com/yourusername/list_am_bot/discussions)
-- **Bugs?** Open an [issue](https://github.com/yourusername/list_am_bot/issues)
+- **Questions?** Open a [discussion](https://github.com/zombiQWERTY/listambot/discussions)
+- **Bugs?** Open an [issue](https://github.com/zombiQWERTY/listambot/issues)
 - **Setup issues?** Check [QUICK_START.md](QUICK_START.md) and [Troubleshooting](README.md#-troubleshooting)
 
 ### Development Commands Quick Reference

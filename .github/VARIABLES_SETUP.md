@@ -21,7 +21,7 @@ Add in **Variables** tab:
 
 - **`DEPLOY_HOST`** = `your-server.com`
 - **`DEPLOY_USER`** = `deploy`
-- **`PROJECT_DIR`** = `/opt/list_am_bot`
+- **`PROJECT_DIR`** = `/opt/listambot`
 
 ### 3. CONFIG Secret Content
 
@@ -40,12 +40,12 @@ FLARESOLVERR_MAX_TIMEOUT=60000
 
 NODE_ENV=production
 
-POSTGRES_HOST=list_am_bot.postgres
+POSTGRES_HOST=listambot.postgres
 POSTGRES_PORT=5432
-POSTGRES_USERNAME=list_am_bot
+POSTGRES_USERNAME=listambot
 POSTGRES_PASSWORD=secure_password_here
-POSTGRES_NAME=list_am_bot
-POSTGRES_BASE_URL=postgresql://list_am_bot:secure_password_here@list_am_bot.postgres:5432/list_am_bot
+POSTGRES_NAME=listambot
+POSTGRES_BASE_URL=postgresql://listambot:secure_password_here@listambot.postgres:5432/listambot
 POSTGRES_TELEGRAF_SCHEMA=public
 ```
 
@@ -55,7 +55,7 @@ POSTGRES_TELEGRAF_SCHEMA=public
 # 1. Set deployment variables
 gh variable set DEPLOY_HOST --body "your-server.com"
 gh variable set DEPLOY_USER --body "deploy"
-gh variable set PROJECT_DIR --body "/opt/list_am_bot"
+gh variable set PROJECT_DIR --body "/opt/listambot"
 
 # 2. Set SSH key
 gh secret set DEPLOY_SSH_KEY < ~/.ssh/deploy_key
@@ -66,7 +66,7 @@ gh secret set CONFIG < .env.production
 # Or directly (multi-line)
 gh secret set CONFIG --body "BOT_TOKEN=xxx
 BOT_ENVIRONMENT=production
-POSTGRES_HOST=list_am_bot.postgres
+POSTGRES_HOST=listambot.postgres
 ..."
 ```
 
@@ -89,12 +89,12 @@ FLARESOLVERR_MAX_TIMEOUT=60000
 
 NODE_ENV=production
 
-POSTGRES_HOST=list_am_bot.postgres
+POSTGRES_HOST=listambot.postgres
 POSTGRES_PORT=5432
-POSTGRES_USERNAME=list_am_bot
+POSTGRES_USERNAME=listambot
 POSTGRES_PASSWORD=secure_password_here
-POSTGRES_NAME=list_am_bot
-POSTGRES_BASE_URL=postgresql://list_am_bot:secure_password_here@list_am_bot.postgres:5432/list_am_bot
+POSTGRES_NAME=listambot
+POSTGRES_BASE_URL=postgresql://listambot:secure_password_here@listambot.postgres:5432/listambot
 POSTGRES_TELEGRAF_SCHEMA=public
 EOF
 

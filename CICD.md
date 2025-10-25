@@ -95,12 +95,12 @@ Go to **Secrets** tab and add:
 
 Go to **Variables** tab and add:
 
-| Variable Name | Description                     | Example            |
-| ------------- | ------------------------------- | ------------------ |
-| `DEPLOY_HOST` | Production server hostname/IP   | `your-server.com`  |
-| `DEPLOY_USER` | SSH username                    | `deploy`           |
-| `DEPLOY_PORT` | SSH port (optional, default 22) | `2221`             |
-| `PROJECT_DIR` | Deployment directory on server  | `/opt/list_am_bot` |
+| Variable Name | Description                     | Example           |
+| ------------- | ------------------------------- | ----------------- |
+| `DEPLOY_HOST` | Production server hostname/IP   | `your-server.com` |
+| `DEPLOY_USER` | SSH username                    | `deploy`          |
+| `DEPLOY_PORT` | SSH port (optional, default 22) | `2221`            |
+| `PROJECT_DIR` | Deployment directory on server  | `/opt/listambot`  |
 
 #### 3. CONFIG Secret Format
 
@@ -119,12 +119,12 @@ FLARESOLVERR_MAX_TIMEOUT=60000
 
 NODE_ENV=production
 
-POSTGRES_HOST=list_am_bot.postgres
+POSTGRES_HOST=listambot.postgres
 POSTGRES_PORT=5432
-POSTGRES_USERNAME=list_am_bot
+POSTGRES_USERNAME=listambot
 POSTGRES_PASSWORD=secure_password_here
-POSTGRES_NAME=list_am_bot
-POSTGRES_BASE_URL=postgresql://list_am_bot:secure_password_here@list_am_bot.postgres:5432/list_am_bot
+POSTGRES_NAME=listambot
+POSTGRES_BASE_URL=postgresql://listambot:secure_password_here@listambot.postgres:5432/listambot
 POSTGRES_TELEGRAF_SCHEMA=public
 ```
 
@@ -185,7 +185,7 @@ If you prefer separate variables instead of single `CONFIG`:
 | -------------------------- | --------------------------------- | -------------------------- |
 | `DEPLOY_HOST`              | Production server hostname/IP     | `your-server.com`          |
 | `DEPLOY_USER`              | SSH username                      | `deploy`                   |
-| `PROJECT_DIR`              | Deployment directory on server    | `/opt/list_am_bot`         |
+| `PROJECT_DIR`              | Deployment directory on server    | `/opt/listambot`           |
 | `BOT_INCIDENTS_USER_ID`    | Admin Telegram user ID for errors | `123456789`                |
 | `BOT_ENVIRONMENT`          | Environment name                  | `production`               |
 | `BOT_DOMAIN`               | Domain for webhook                | `your-domain.com`          |
@@ -193,9 +193,9 @@ If you prefer separate variables instead of single `CONFIG`:
 | `FLARESOLVERR_URL`         | FlareSolverr service URL          | `http://flaresolverr:8191` |
 | `FLARESOLVERR_PORT`        | FlareSolverr service port         | `8191`                     |
 | `NODE_ENV`                 | Node environment                  | `production`               |
-| `POSTGRES_HOST`            | PostgreSQL hostname               | `list_am_bot.postgres`     |
+| `POSTGRES_HOST`            | PostgreSQL hostname               | `listambot.postgres`       |
 | `POSTGRES_PORT`            | PostgreSQL port                   | `5432`                     |
-| `POSTGRES_NAME`            | Database name                     | `list_am_bot`              |
+| `POSTGRES_NAME`            | Database name                     | `listambot`                |
 | `POSTGRES_TELEGRAF_SCHEMA` | Schema for Telegraf sessions      | `public`                   |
 
 </details>
@@ -221,7 +221,7 @@ Images are automatically pushed to `ghcr.io/<username>/list_am_bot/`:
 ### Make Images Public (Optional)
 
 1. Go to your profile → **Packages**
-2. Click on `list_am_bot/base` and `list_am_bot/app`
+2. Click on `listambot/base` and `listambot/app`
 3. **Package settings → Change visibility → Public**
 
 ---
@@ -251,8 +251,8 @@ sudo useradd -m -s /bin/bash deploy
 sudo usermod -aG docker deploy
 
 # Create project directory
-sudo mkdir -p /opt/list_am_bot
-sudo chown deploy:deploy /opt/list_am_bot
+sudo mkdir -p /opt/listambot
+sudo chown deploy:deploy /opt/listambot
 
 # Create Docker network (for external network in docker-compose)
 docker network create listambot_network
@@ -292,7 +292,7 @@ ssh -p 2221 deploy@your-server
 # ssh deploy@your-server
 
 # Navigate to project directory
-cd /opt/list_am_bot
+cd /opt/listambot
 
 # Create Docker network if it doesn't exist
 docker network create listambot_network || true
@@ -330,20 +330,20 @@ ssh -p 2221 deploy@your-server
 docker ps
 
 # View logs
-docker logs -f list_am_bot.core
+docker logs -f listambot.core
 
 # Check service health
-docker exec list_am_bot.core curl -f http://localhost:3000/health || echo "Service down"
+docker exec listambot.core curl -f http://localhost:3000/health || echo "Service down"
 ```
 
 ### Rollback Deployment
 
 ```bash
 # SSH to server
-cd /opt/list_am_bot
+cd /opt/listambot
 
 # Check available images
-docker images | grep list_am_bot
+docker images | grep listambot
 
 # Update docker-compose.yml with previous version
 sed -i 's/:main/:previous-tag/g' docker-compose.yml
@@ -445,7 +445,7 @@ docker run --rm \
   sh -c 'npm test'
 
 # Check PostgreSQL is accessible
-docker run --rm --network host postgres:14 psql -h localhost -U list_am_bot -d list_am_bot_test -c "SELECT 1"
+docker run --rm --network host postgres:14 psql -h localhost -U listambot -d listambot_test -c "SELECT 1"
 ```
 
 ---

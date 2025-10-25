@@ -29,7 +29,7 @@ Comprehensive guide for developing List.am Bot.
 ```bash
 # Clone repository
 git clone https://github.com/zombiQWERTY/list_am_bot.git
-cd list_am_bot
+cd listambot
 
 # Install dependencies locally (for IDE autocomplete)
 npm install
@@ -50,8 +50,8 @@ nano .env
 
 The project uses Docker Compose with two main services:
 
-- **list_am_bot.core** — Main application container
-- **list_am_bot.postgres** — PostgreSQL database
+- **listambot.core** — Main application container
+- **listambot.postgres** — PostgreSQL database
 
 ### Starting Development Environment
 
@@ -60,7 +60,7 @@ The project uses Docker Compose with two main services:
 make up
 
 # This is equivalent to:
-docker build -t "list_am_bot-dev:latest" -f ./infra/dev/Dockerfile .
+docker build -t "listambot-dev:latest" -f ./infra/dev/Dockerfile .
 docker compose --profile node --profile system up -d
 ```
 
@@ -87,7 +87,7 @@ docker compose logs -f
 docker compose logs --tail=100
 
 # View PostgreSQL logs
-docker compose logs list_am_bot.postgres
+docker compose logs listambot.postgres
 ```
 
 ---
@@ -100,7 +100,7 @@ After starting services for the first time, create database schemas:
 
 ```bash
 # Access container
-docker exec -it list_am_bot.core bash
+docker exec -it listambot.core bash
 
 # Create schemas
 psql $POSTGRES_BASE_URL -c "CREATE SCHEMA IF NOT EXISTS core;"
@@ -140,14 +140,14 @@ exit
 /tmp/typeorm-migrate.sh
 
 # Or from host
-docker exec -it list_am_bot.core /tmp/typeorm-migrate.sh
+docker exec -it listambot.core /tmp/typeorm-migrate.sh
 ```
 
 ### Reverting Migrations
 
 ```bash
 # Revert last migration
-docker exec -it list_am_bot.core /tmp/typeorm-revert.sh
+docker exec -it listambot.core /tmp/typeorm-revert.sh
 
 # Revert multiple migrations
 # Run the command multiple times
@@ -156,7 +156,7 @@ docker exec -it list_am_bot.core /tmp/typeorm-revert.sh
 ### Direct Database Access
 
 ```bash
-docker exec -it list_am_bot.postgres psql -U list_am_bot -d list_am_bot
+docker exec -it listambot.postgres psql -U listambot -d listambot
 
 # View tables
 \dt
@@ -233,13 +233,13 @@ make restart
 
 ```bash
 # Inside container
-docker exec -it list_am_bot.core npm run test
+docker exec -it listambot.core npm run test
 
 # With coverage
-docker exec -it list_am_bot.core npm run test:cov
+docker exec -it listambot.core npm run test:cov
 
 # Watch mode
-docker exec -it list_am_bot.core npm run test:watch
+docker exec -it listambot.core npm run test:watch
 
 # Locally (if dependencies installed)
 npm run test
@@ -296,7 +296,7 @@ describe('UserService', () => {
 make shell
 
 # Or manually
-docker exec -it list_am_bot.core bash
+docker exec -it listambot.core bash
 ```
 
 ### View Environment Variables
@@ -324,14 +324,14 @@ ps aux | grep node
 docker network ls
 
 # Inspect network
-docker network inspect list_am_bot_default
+docker network inspect listambot_default
 ```
 
 ### Debug Database Connection
 
 ```bash
 # Test connection from container
-docker exec -it list_am_bot.core bash -c 'psql $POSTGRES_BASE_URL -c "SELECT 1"'
+docker exec -it listambot.core bash -c 'psql $POSTGRES_BASE_URL -c "SELECT 1"'
 
 # Should return:
 # ?column?
@@ -361,7 +361,7 @@ make down
 docker system prune -a --volumes
 
 # Remove only project volumes
-docker volume rm list_am_bot_postgres_data
+docker volume rm listambot_postgres_data
 ```
 
 ### Resetting Database
@@ -371,7 +371,7 @@ docker volume rm list_am_bot_postgres_data
 make down
 
 # Remove database volume
-docker volume rm list_am_bot_postgres_data
+docker volume rm listambot_postgres_data
 
 # Start services
 make up
@@ -415,10 +415,10 @@ make logs > logs/bot.log 2>&1
 
 ```bash
 # Check container resource usage
-docker stats list_am_bot.core
+docker stats listambot.core
 
 # View memory usage
-docker exec -it list_am_bot.core node -e "console.log(process.memoryUsage())"
+docker exec -it listambot.core node -e "console.log(process.memoryUsage())"
 ```
 
 ### Monitoring Metrics
@@ -522,10 +522,10 @@ lsof -i :5432
 docker ps -a
 
 # View container logs
-docker logs list_am_bot.core
+docker logs listambot.core
 
 # Inspect container
-docker inspect list_am_bot.core
+docker inspect listambot.core
 ```
 
 ### Database Connection Errors
@@ -535,10 +535,10 @@ docker inspect list_am_bot.core
 docker ps | grep postgres
 
 # Check connection from container
-docker exec -it list_am_bot.core psql $POSTGRES_BASE_URL -c "SELECT 1"
+docker exec -it listambot.core psql $POSTGRES_BASE_URL -c "SELECT 1"
 
 # Check environment variables
-docker exec -it list_am_bot.core printenv | grep POSTGRES
+docker exec -it listambot.core printenv | grep POSTGRES
 ```
 
 ---
@@ -577,7 +577,7 @@ npm run lint
 npm run build
 
 # Test
-docker exec -it list_am_bot.core npm run test
+docker exec -it listambot.core npm run test
 ```
 
 ---

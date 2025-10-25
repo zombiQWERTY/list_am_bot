@@ -2,7 +2,7 @@
 
 up:
 	@echo "🚀 Starting application in docker..."
-	@docker build -t "list_am_bot-dev:latest" -f ./infra/dev/Dockerfile .
+	@docker build -t "listambot-dev:latest" -f ./infra/dev/Dockerfile .
 	@docker compose --profile node --profile system up -d
 	@echo "✅ Application started successfully!"
 	@echo "💡 Use 'make logs' to view logs"
@@ -14,14 +14,14 @@ down:
 
 rebuild-all:
 	@echo "🔨 Rebuilding and restarting entire project..."
-	@docker build --cache-from "list_am_bot-dev:latest" -t "list_am_bot-dev:latest" -f ./infra/dev/Dockerfile .
+	@docker build --cache-from "listambot-dev:latest" -t "listambot-dev:latest" -f ./infra/dev/Dockerfile .
 	@docker compose --profile node --profile system up -d --build --force-recreate
 	@echo "✅ Project rebuilt and restarted!"
 
 rebuild-one:
-	@echo "🔨 Rebuilding bot service (list_am_bot.core)..."
-	@docker build --cache-from "list_am_bot-dev:latest" -t "list_am_bot-dev:latest" -f ./infra/dev/Dockerfile .
-	@docker compose up list_am_bot.core -d --build --force-recreate
+	@echo "🔨 Rebuilding bot service (listambot.core)..."
+	@docker build --cache-from "listambot-dev:latest" -t "listambot-dev:latest" -f ./infra/dev/Dockerfile .
+	@docker compose up listambot.core -d --build --force-recreate
 	@echo "✅ Bot service rebuilt and restarted!"
 
 restart:
@@ -30,9 +30,9 @@ restart:
 	@echo "✅ Application restarted!"
 
 logs:
-	@echo "📋 Watching logs for list_am_bot.core..."
-	@docker logs --follow list_am_bot.core
+	@echo "📋 Watching logs for listambot.core..."
+	@docker logs --follow listambot.core
 
 shell:
 	@echo "🐚 Accessing bot container shell..."
-	@docker exec -it list_am_bot.core bash
+	@docker exec -it listambot.core bash

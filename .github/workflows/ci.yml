@@ -71,9 +71,9 @@ jobs:
       postgres:
         image: postgres:14
         env:
-          POSTGRES_USER: list_am_bot
+          POSTGRES_USER: listambot
           POSTGRES_PASSWORD: password
-          POSTGRES_DB: list_am_bot_test
+          POSTGRES_DB: listambot_test
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -100,9 +100,9 @@ jobs:
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
-          POSTGRES_USERNAME: list_am_bot
+          POSTGRES_USERNAME: listambot
           POSTGRES_PASSWORD: password
-          POSTGRES_NAME: list_am_bot_test
+          POSTGRES_NAME: listambot_test
           BOT_TOKEN: test_token
           NODE_ENV: test
 
