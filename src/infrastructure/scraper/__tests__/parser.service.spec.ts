@@ -344,5 +344,68 @@ describe('ParserService', (): void => {
 
       expect(result).toContain('q=');
     });
+
+    it('should use URL subscription directly when query is a URL', (): void => {
+      const urlSubscription =
+        'https://www.list.am/category/134?cnd=2&price2=30000';
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        urlSubscription,
+      );
+
+      expect(result).toBe(urlSubscription);
+    });
+
+    it('should detect http protocol as URL', (): void => {
+      const urlSubscription = 'http://www.list.am/category/134?cnd=2';
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        urlSubscription,
+      );
+
+      expect(result).toBe(urlSubscription);
+    });
+
+    it('should preserve condition parameter in URL subscription', (): void => {
+      const urlSubscription =
+        'https://www.list.am/category/134?cnd=2&crc=0&n=1&price2=30000&srt=3';
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        urlSubscription,
+      );
+
+      expect(result).toContain('cnd=2');
+    });
+
+    it('should preserve price parameter in URL subscription', (): void => {
+      const urlSubscription =
+        'https://www.list.am/category/134?cnd=2&crc=0&n=1&price2=30000&srt=3';
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        urlSubscription,
+      );
+
+      expect(result).toContain('price2=30000');
+    });
+
+    it('should preserve sort parameter in URL subscription', (): void => {
+      const urlSubscription =
+        'https://www.list.am/category/134?cnd=2&crc=0&n=1&price2=30000&srt=3';
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        urlSubscription,
+      );
+
+      expect(result).toContain('srt=3');
+    });
+
+    it('should not treat partial URLs as URL subscriptions', (): void => {
+      const result = service.buildSearchUrl(
+        'https://www.list.am',
+        'list.am/category',
+      );
+
+      expect(result).toContain('q=');
+    });
   });
 });

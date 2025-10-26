@@ -162,10 +162,24 @@ export class ParserService {
   }
 
   buildSearchUrl(baseUrl: string, query: string): string {
+    if (this.isUrl(query)) {
+      this.logger.debug(`Using URL subscription directly: ${query}`);
+      return query;
+    }
+
     const url = new URL('/ru/category', baseUrl);
     url.searchParams.set('q', query);
     const searchUrl = url.toString();
     this.logger.debug(`Built search URL: ${searchUrl}`);
     return searchUrl;
+  }
+
+  private isUrl(text: string): boolean {
+    try {
+      const url = new URL(text);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
   }
 }
