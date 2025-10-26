@@ -21,11 +21,15 @@ jobs:
         image: [base, app]
 
     steps:
+      - name: Set lowercase image name
+        id: image-name
+        run: echo "value=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
+
       - name: Delete old images
+        continue-on-error: true
         uses: actions/delete-package-versions@v5
         with:
-          package-name: ${{ github.repository }}/${{ matrix.image }}
+          package-name: ${{ steps.image-name.outputs.value }}/${{ matrix.image }}
           package-type: container
           min-versions-to-keep: 10
           delete-only-untagged-versions: true
-
