@@ -48,7 +48,7 @@
     "@nestjs/schedule": "^6.0.1",
     "@nestjs/typeorm": "^11.0.0",
     "@telegraf/session": "^2.0.0-beta.7",
-    "axios": "^1.12.2",
+    "axios": "^1.13.1",
     "cheerio": "^1.1.2",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
