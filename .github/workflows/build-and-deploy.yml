@@ -161,7 +161,7 @@ jobs:
         run: echo "value=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Deploy to production server
-        uses: appleboy/ssh-action@v1.0.0
+        uses: appleboy/ssh-action@v1.2.3
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ steps.deploy-image-name.outputs.value }}
